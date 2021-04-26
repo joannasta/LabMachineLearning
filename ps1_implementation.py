@@ -1,16 +1,11 @@
 """ sheet1_implementation.py
-
 Viola-Joanna Stamer, 383280
 Friedrich Christian Wicke, 403336
-
-
 Write the functions
 - pca
 - gammaidx
 - lle
 Write your implementations in the given functions stubs!
-
-
 (c) Daniel Bartz, TU Berlin, 2013
     Jacob Kauffmann, TU Berlin, 2021
 """
@@ -39,7 +34,7 @@ class PCA():
         return eigenValues[order]"""
 
     def computeCovariance(self, Xtrain):
-        return np.cov(centerMatrix(Xtrain))
+        return np.cov(self.centerMatrix(Xtrain))
         """n=len(Xtrain)
         d=len(Xtrain[0])
         finalMat=np.zeros((d,d))
@@ -64,14 +59,14 @@ class PCA():
         means=self.centerOfData(Xtrain)
         n=len(Xtrain)
         #Subtracting the average from each vector to obtain centered data
-        meanMat=np.array([means]*n)
+        1
         centeredMatrix=Xtrain-meanMat
         #returning the centered Data
         return centeredMatrix
 
     def project(self, Xtest, m):
-        CTest=centerMatrix(XTest)
-        return (CTest@(U[1:m].T))
+        CTest=self.centerMatrix(Xtest)
+        return (CTest@(self.U[1:m].T))
         #Input: TestData as (nxd)
         #Output: projected data in (nxm) Matrix
         #Use the m first columns of U
@@ -89,10 +84,10 @@ class PCA():
 def gammaidx(X, k):
     # Input : X  is a data-matrix (nxd)
     # Output : gamma  is a vector which contains the gamma-index for each datapoint (nx1)
-
+    n=X.shape[0]
     gamma = np.zeros ((n))
     for i in range(X.shape[0]):
-        distance = np.linalg.norm( X[i] - X , axis = 0) # nx1
+        distance = np.linalg.norm( X[i] - X , axis = 1) # nx1
         distance = np.argsort(distance)[:k+1]
         gamma[i] =(1/k)*np.sum(distance)
     return gamma
@@ -113,7 +108,7 @@ def auc(y_true, y_pred, plot=False):
 def plot_ROC(C):
     plt.step(C[:,0],C[:,1])
 
-    
+
 def make_coordinates(y_true,y_pred,P,N):
     C   = np.zeros((n+1,2))
     idx = np.argsort(y_pred)
@@ -128,8 +123,8 @@ def make_coordinates(y_true,y_pred,P,N):
                 C[i+1,1] = -1
                 continue
         # Klassifikation y_pred
-        TP = y_true_sorted[p+1:][np.where y_true_sorted == 1].shape[0]
-        FP = y_true_sorted[p+1:][np.where y_true_sorted == -1].shape[0]
+        TP = y_true_sorted[p+1:][np.where (y_true_sorted == 1)].shape[0]
+        FP = y_true_sorted[p+1:][np.where (y_true_sorted == -1)].shape[0]
         # TPR
         TPR = TP/P.shape[0]
         # FPR
@@ -160,7 +155,7 @@ def lle(X, m, n_rule, param, tol=1e-2):
     n = X.shape[0]
     W = np.zeros((n,n))
     for i in range(n):
-        # hier nochmal rübergucken 
+        # hier nochmal rübergucken
         k = Neighbors[i].shape[0]
         C = np.zeros((k,k))
         for j in range(k):
@@ -177,7 +172,7 @@ def lle(X, m, n_rule, param, tol=1e-2):
             k=0
             if i == j :
                 k = 1
-            M[i,j] = k - W[i,j] - W[j,i] + np.sum(W[i]@W[j], axis=0) 
+            M[i,j] = k - W[i,j] - W[j,i] + np.sum(W[i]@W[j], axis=0)
     # ...
     print ('Step 3: compute embedding')
     Z = np.zeros((n,m))
@@ -192,7 +187,7 @@ def lle(X, m, n_rule, param, tol=1e-2):
     # ...
 
 def eps_ball(X,epsilon):
-    # nxd 
+    # nxd
     Distances_idx =[]
     for i in range(X.shape[0]):
         Distances_idx.append([])
@@ -212,3 +207,4 @@ def k_nearest_neighbor(X,k):
         distance = np.argsort(distance)[:k]
         Neighbors[i] = distance
     return Neighbors
+
