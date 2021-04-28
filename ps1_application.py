@@ -63,17 +63,18 @@ def usps():
     plt.show()
 
 
-def outliers_calc():
-    banana = np.load('./data/banana.npz')
-    dataset, labels = banana["data"], banana["label"]
 
-    #1) Sample a random set of outliers (...)
-    #k ist die Anzahl der generierten Outliers
-    #insgesamt 5300 Werte -> 1% =  53, 10%= 530, 50%=2650, 100%=5300
-    k=53
-    outliers = np.random.uniform(-4,4,(2,k))
+def app_auc(gamma):
+    p = (gamma.shape[0]-5300)
+    y_true = np.asarray((5300*[-1] + p*[1]))
+    y_pred = np.asarray(((2*gamma/np.amax(gamma))-1))
+    trapez_s = imp.auc(y_true,y_pred,False)
+    return trapez_s
 
-    #2) Add the outliers, compute g-index with k=3, k=10 distance to the mean
+def sample_outliers(k):
+    return np.random.uniform(-4,4,(2,int(k*5300)))
+
+def calc_indexes(dataset,outliers):
     newdata=(np.append(dataset, outliers, axis=1)).T
     gamma3= imp.gammaidx(newdata, 3)
     gamma10= imp.gammaidx(newdata, 10)
@@ -81,8 +82,36 @@ def outliers_calc():
     x=x.reshape((2,1))
     x=np.repeat(x, newdata.shape[0], axis=1)
     disToMean=np.linalg.norm((np.subtract(x,newdata.T)), axis=0)
-    print(disToMean)
+    return gamma3, gamma10, disToMean
 
+def outliers_calc():
+    banana = np.load('./data/banana.npz')
+    dataset, labels = banana["data"], banana["label"]
+    k = 0.1
+    gamma3_List, gamma10_List,disToMean_List= np.zeros((100)), np.zeros((100)),np.zeros((100))
+    for i in range(20):
+        #1) Sample a random set of outliers (...)
+        #k ist der Anteil der generierten Outliers
+        #insgesamt 5300 Werte -> 1% =  53, 10%= 530, 50%=2650, 100%=5300
+
+        outliers = sample_outliers(k)
+        
+        #2) Add the outliers, compute g-index with k=3, k=10 distance to the mean
+        gamma3,gamma10,disToMean = calc_indexes(dataset,outliers)
+
+        # 3) compute the AUC
+        gamma3_List[i]    = (app_auc(gamma3))
+        gamma10_List[i]   = (app_auc(gamma10))
+        disToMean_List[i] = (app_auc(disToMean))
+        print(i)
+
+    fig1, axs = plt.subplots(3)
+    axs[0].set_title('gamma3 Plot')
+    axs[0].boxplot(gamma3_List)
+    axs[1].set_title('gamma10 Plot')
+    axs[1].boxplot(gamma10_List)
+    axs[2].set_title('disToMean Plot')
+    axs[2].boxplot(disToMean_List)
     # np.savez_compressed('outliers.npz', var1=var1, var2=var2, ...)
 
 
