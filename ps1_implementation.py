@@ -128,7 +128,7 @@ def make_coordinates(y_true,y_pred,P,N):
             Columns_to_del.append(i+1)
             C[i+1,0] = -1
             C[i+1,1] = -1
-                
+
         else:
             y_true_sliced = y_true_sorted[i+1::]
 
@@ -141,7 +141,7 @@ def make_coordinates(y_true,y_pred,P,N):
             C[i+1,0] = FPR
             C[i+1,1] = TPR
 
-   
+
     C = np.delete(C,Columns_to_del,axis=0)
 
     return C
@@ -219,4 +219,3 @@ def k_nearest_neighbor(X,k):
         distance = np.argsort(distance)[:k]
         Neighbors[i] = distance
     return Neighbors
-
