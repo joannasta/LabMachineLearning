@@ -1,15 +1,11 @@
 """ sheet1_implementation.py
-
 Viola-Joanna Stamer, 383280
 Friedrich Christian Wicke, 403336
-
 Write the functions
 - usps
 - outliers
 - lle
 Write your implementations in the given functions stubs!
-
-
 (c) Daniel Bartz, TU Berlin, 2013
     Jacob Kauffmann, TU Berlin, 2021
 """
@@ -64,11 +60,11 @@ def usps():
 
 
 
-def app_auc(gamma):
+def app_auc(gamma, plot):
     p = (gamma.shape[0]-5300)
     y_true = np.asarray((5300*[-1] + p*[1]))
     y_pred = np.asarray(((2*gamma/np.amax(gamma))-1))
-    trapez_s = imp.auc(y_true,y_pred,False)
+    trapez_s = imp.auc(y_true,y_pred,plot)
     return trapez_s
 
 def sample_outliers(k):
@@ -88,31 +84,45 @@ def outliers_calc():
     banana = np.load('./data/banana.npz')
     dataset, labels = banana["data"], banana["label"]
     k = 0.1
-    gamma3_List, gamma10_List,disToMean_List= np.zeros((100)), np.zeros((100)),np.zeros((100))
-    for i in range(20):
+    rep=100
+    gamma3_List, gamma10_List,disToMean_List= np.zeros((rep)), np.zeros((rep)),np.zeros((rep))
+    for i in range(rep):
         #1) Sample a random set of outliers (...)
         #k ist der Anteil der generierten Outliers
         #insgesamt 5300 Werte -> 1% =  53, 10%= 530, 50%=2650, 100%=5300
 
         outliers = sample_outliers(k)
-        
+
         #2) Add the outliers, compute g-index with k=3, k=10 distance to the mean
         gamma3,gamma10,disToMean = calc_indexes(dataset,outliers)
 
         # 3) compute the AUC
-        gamma3_List[i]    = (app_auc(gamma3))
-        gamma10_List[i]   = (app_auc(gamma10))
-        disToMean_List[i] = (app_auc(disToMean))
-        print(i)
+        gamma3_List[i]    = (app_auc(gamma3, False))
+        gamma10_List[i]   = (app_auc(gamma10, False))
+        disToMean_List[i] = (app_auc(disToMean, False))
 
     fig1, axs = plt.subplots(3)
-    axs[0].set_title('gamma3 Plot')
+    #axs[0].set_title('gamma3 Plot')
     axs[0].boxplot(gamma3_List)
-    axs[1].set_title('gamma10 Plot')
+    #axs[1].set_title('gamma10 Plot')
     axs[1].boxplot(gamma10_List)
-    axs[2].set_title('disToMean Plot')
+    #axs[2].set_title('disToMean Plot')
     axs[2].boxplot(disToMean_List)
+    plt.show()
     # np.savez_compressed('outliers.npz', var1=var1, var2=var2, ...)
+
+def exemplaryPlot():
+    banana = np.load('./data/banana.npz')
+    dataset, labels = banana["data"], banana["label"]
+    outliers = sample_outliers(0.2)
+    gamma3,gamma10,disToMean = calc_indexes(dataset,outliers)
+    gamma3 = (app_auc(gamma3, True))
+    gamma10 = (app_auc(gamma10, True))
+    disToMean = (app_auc(disToMean, True))
+    plt.scatter(dataset[0,::],dataset[1,::])
+    plt.scatter(outliers[0,p::],outliers[1,::])
+    plt.show()
+
 
 
 def outliers_disp():
