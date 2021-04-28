@@ -92,46 +92,58 @@ def gammaidx(X, k):
         gamma[i] =(1/k)*np.sum(distance)
     return gamma
 
-
+def trapez(X,Y):
+    s=0
+    for idx,x in enumerate(X[0:-1]):
+        s+= (x-X[idx+1])*(Y[idx]+0.5*(Y[idx+1]-Y[idx]))
+    return s
 def auc(y_true, y_pred, plot=False):
     # ...
     # you may use numpy.trapz here
-    P = y_true[np.where(y_true == 1)]
-    N = y_true[np.where(y_true == -1)]
+
+    P = y_true[np.where(y_true == 1)[0]]
+    N = y_true[np.where(y_true == -1)[0]]
     n = y_pred.shape[0]
     ROC = make_coordinates(y_true,y_pred,P,N)
     if plot :
         plot_ROC(ROC)
-    AUC = np.trapz(ROC[:,0],ROC[:,1])
-    return AUC
+    trapez_s = trapez(ROC[::,0],ROC[::,1])
+    return trapez_s
 
 def plot_ROC(C):
     plt.step(C[:,0],C[:,1])
+    plt.show()
 
 
 def make_coordinates(y_true,y_pred,P,N):
-    C   = np.zeros((n+1,2))
+    C   = np.zeros((y_true.shape[0]+1,2))
     idx = np.argsort(y_pred)
+    Columns_to_del = []
     y_true_sorted = y_true[idx]
     y_pred_sorted = y_pred[idx]
     C[0,0] = 1
     C[0,1] = 1
     for i,p in enumerate(y_pred_sorted):
-        if i != y_pred_sorted.shape[0]-1:
-            if  p == y_pred_sorted[i+1]:
-                C[i+1,0] = -1
-                C[i+1,1] = -1
-                continue
-        # Klassifikation y_pred
-        TP = y_true_sorted[p+1:][np.where (y_true_sorted == 1)].shape[0]
-        FP = y_true_sorted[p+1:][np.where (y_true_sorted == -1)].shape[0]
-        # TPR
-        TPR = TP/P.shape[0]
-        # FPR
-        FPR = FP/N.shape[0]
-        C[i+1,0] = FPR
-        C[i+1,1] = TPR
-    C = np.extract([-1,-1],C)
+        if i != y_pred_sorted.shape[0]-1 and   p == y_pred_sorted[i+1]:
+            Columns_to_del.append(i+1)
+            C[i+1,0] = -1
+            C[i+1,1] = -1
+                
+        else:
+            y_true_sliced = y_true_sorted[i+1::]
+
+            TP = (y_true_sliced[np.where(y_true_sliced == 1)[0]]).shape[0]
+            FP = (y_true_sliced[np.where(y_true_sliced == -1)[0]]).shape[0]
+            # TPR
+            TPR = TP/P.shape[0]
+            # FPR
+            FPR = FP/N.shape[0]
+            C[i+1,0] = FPR
+            C[i+1,1] = TPR
+
+   
+    C = np.delete(C,Columns_to_del,axis=0)
+
     return C
 
 
