@@ -131,8 +131,20 @@ def outliers_disp():
 
 
 def lle_visualize(dataset='flatroll'):
-    ''' visualization of LLE for assignment 7'''
+    fishbowl = np.load('./data/fishbowl_dense.npz')
+    swissroll = np.load('./data/swissroll_data.npz')
+    flatroll = np.load('./data/flatroll_data.npz')
+    fish_data = fishbowl["X"].T
+    fish_reference = fishbowl["X"].T[:,2]
+    swissroll_data = (swissroll["x_noisefree"]).T
+    swissroll_reference = swissroll["z"].T[:,0]
+    flatroll_data = (flatroll["Xflat"]).T
+    flatroll_reference = flatroll["true_embedding"]
 
+    #lle(X, m, n_rule, param, tol=1e-2)
+    # n_rule: "knn" or "eps-ball"
+    #param: Anzahl der nearest neighbours oder gew. epsilon
+    imp.lle(fish_data, fish_reference, "knn", 50, 1e-2)
 
 def lle_noise():
     ''' LLE under noise for assignment 8'''
