@@ -138,16 +138,21 @@ def lle_visualize(dataset='flatroll'):
         #param: Anzahl der nearest neighbours oder gew. epsilon
         #imp.lle(fish_data, fish_reference, "knn", 50, 1e-2)
         #calculate lle
-    #3) plot lle-embedding    
+    #3) plot lle-embedding
+
+    #Hyperparameter
+    n_rule="eps-ball"
+    param = 10
 
     if dataset == "flatroll":
         flatroll = np.load('./data/flatroll_data.npz')
         data = (flatroll["Xflat"]).T
         reference = flatroll["true_embedding"]
         plt.scatter(data[:,0], data[:,1], cmap='Greens')
-        plt.show()
 
-        #imp.lle(data, reference, n_rule, param, tol=1e-2)
+        LLE = imp.lle(data, reference, n_rule, param, tol=1e-2)
+        plt.scatter(LLE[:,0],LLE[:,1])
+        plt.show()
 
     if dataset == "fishbowl":
         fishbowl = np.load('./data/fishbowl_dense.npz')
@@ -157,9 +162,10 @@ def lle_visualize(dataset='flatroll'):
         ax = plt.axes(projection='3d')
         zdata = 15 * np.random.random(2000)
         ax.scatter3D(data[:,0], data[:,1], data[:,2], c=zdata, cmap='Greens')
-        plt.show()
 
-        #imp.lle(data, reference, n_rule, param, tol=1e-2)
+        LLE = imp.lle(data, reference, n_rule, param, tol=1e-2)
+        plt.scatter(LLE[:,0],LLE[:,1])
+        plt.show()
 
     if dataset == "swissroll":
         swissroll = np.load('./data/swissroll_data.npz')
@@ -168,15 +174,17 @@ def lle_visualize(dataset='flatroll'):
         fig = plt.figure()
         ax = plt.axes(projection='3d')
         zdata = 15 * np.random.random(400)
-        ax.scatter3D(data[:,0], data[:,1], data[:,2], c=zdata, cmap='Greens')
+        #ax.scatter3D(data[:,0], data[:,1], data[:,2], c=zdata, cmap='Greens')
+
+        reference = np.zeros((400,2))
+        LLE = imp.lle(data, reference, n_rule, param, tol=1e-2)
+        ax.scatter(LLE[:,0],LLE[:,1], c='r')
         plt.show()
-
-        #imp.lle(data, reference, n_rule, param, tol=1e-2)
-    
-
+        #print(LLE[:,0],LLE[:,1].shape)
 
 def lle_noise():
     ''' LLE under noise for assignment 8'''
 
 def lle_noise():
     ''' LLE under noise for assignment 8'''
+
