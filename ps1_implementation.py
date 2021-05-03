@@ -59,25 +59,31 @@ class PCA():
         means=self.centerOfData(Xtrain)
         n=len(Xtrain)
         #Subtracting the average from each vector to obtain centered data
-        1
+        meanMat = np.array([means]*n)
         centeredMatrix=Xtrain-meanMat
         #returning the centered Data
         return centeredMatrix
 
     def project(self, Xtest, m):
+        #Xtest nxd
         CTest=self.centerMatrix(Xtest)
-        return (CTest@(self.U[1:m].T))
+        #U = self.U
+        return ((self.U[:,1:m]).T@CTest)#(CTest@(self.U[:,1:m]))
         #Input: TestData as (nxd)
         #Output: projected data in (nxm) Matrix
         #Use the m first columns of U
         #returns projection into subspace with fewer dimensions
 
     def denoise(self, Xtest, m):
+        #Xtest nstrichxm
+        #U  mxd
         Z=self.project(Xtest,m)
         d=Xtest.shape[0]
         n=Z.shape[0]
-        X=np.zeros((n,d))
-        X=np.mean(Xtest,axis=0)+np.sum(Z@U,axis=0)
+        #X=np.zeros((n,d))
+        X = np.repeat([np.mean(Xtest,axis=0)],n,axis=0)
+        print((np.mean(Xtest,axis=0)).shape,Z.shape,self.U.shape)#(Z@self.U).shape)
+        X=np.mean(Xtest,axis=0)+Z@self.U#+np.sum(Z@self.U,axis=0)
         return X
 
 
@@ -150,10 +156,11 @@ def make_coordinates(y_true,y_pred,P,N):
 
 
 
-def lle(X, m, n_rule, param, tol=1e-2):
+def lle(X, m, n_rule, k, epsilon=1e-2):
     #print("m", m.shape, "X", X.shape)
     # Input X dxn matrix
     #Hyperparameter: n_rule, param, tol=1e-2
+    param =k
     print ('Step 1: Finding the nearest neighbours by rule ' + n_rule)
     try:
         if n_rule == "knn":
@@ -163,7 +170,6 @@ def lle(X, m, n_rule, param, tol=1e-2):
             Neighbors = (eps_ball(X,param))
     except :
         raise ValueError("keine gueltige Eingabe")
-    #print("Neighbors", Neighbors.shape)
 
     # ...
     print ('Step 2: local reconstruction weights')
@@ -257,9 +263,31 @@ def eps_ball(X,epsilon):
 def k_nearest_neighbor(X,k):
     Neighbors = np.zeros((X.shape[0],k))
     for i in range(X.shape[0]):
-        Y = np.delete(X,(i),axis=0)
-        distance = np.linalg.norm( X[i] - Y, axis = 1) # nx1
+        #Y = np.delete(X,(i),axis=0)
+        distance = np.linalg.norm( X[i] - X, axis = 1) # nx1
+        distance[i] = np.inf
         distance = np.argsort(distance)[:k]
         #print("Neighbors", Neighbors.shape, "distance", distance.shape)
         Neighbors[i] = distance
     return Neighbors
+
+
+def adjacency_matrix(X,k):
+    idx = k_nearest_neighbor(X,k)
+    M = np.zeros((X.shape[0],X.shape[0]))
+    for i in range(X.shape[0]):
+        for j in range(k):
+            row = int(idx[i,j])
+            M[row,i] = 1
+            M[i,row] = 1
+    return M
+
+X = np.array([[ -2.133268233289599,   0.903819474847349,   2.217823388231679, -0.444779660856219,
+                        -0.661480010318842,  -0.163814281248453,  -0.608167714051449,  0.949391996219125],
+                      [ -1.273486742804804,  -1.270450725314960,  -2.873297536940942,   1.819616794091556,
+                        -2.617784834189455,   1.706200163080549,   0.196983250752276,   0.501491995499840],
+                      [ -0.935406638147949,   0.298594472836292,   1.520579082270122,  -1.390457671168661,
+                        -1.180253547776717,  -0.194988736923602,  -0.645052874385757,  -1.400566775105519]]).T
+m = 2;
+PCA_obj = PCA(X)
+PCA_obj.denoise(X,m)
