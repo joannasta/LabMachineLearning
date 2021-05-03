@@ -187,4 +187,3 @@ def lle_noise():
 
 def lle_noise():
     ''' LLE under noise for assignment 8'''
-
