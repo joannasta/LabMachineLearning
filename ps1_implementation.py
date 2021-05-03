@@ -34,7 +34,7 @@ class PCA():
         return eigenValues[order]"""
 
     def computeCovariance(self, Xtrain):
-        return np.cov(self.centerMatrix(Xtrain))
+        return np.cov((self.centerMatrix(Xtrain)).T)
         """n=len(Xtrain)
         d=len(Xtrain[0])
         finalMat=np.zeros((d,d))
@@ -54,7 +54,6 @@ class PCA():
         return means
 
 
-
     def centerMatrix(self,Xtrain):
         means=self.centerOfData(Xtrain)
         n=len(Xtrain)
@@ -67,8 +66,9 @@ class PCA():
     def project(self, Xtest, m):
         #Xtest nxd
         CTest=self.centerMatrix(Xtest)
+        #print("C",CTest.T.shape,"U",self.U[:,0:m].shape)
         #U = self.U
-        return ((self.U[:,1:m]).T@CTest)#(CTest@(self.U[:,1:m]))
+        return ((CTest)@(self.U[:,0:m]))#(CTest@(self.U[:,1:m]))
         #Input: TestData as (nxd)
         #Output: projected data in (nxm) Matrix
         #Use the m first columns of U
@@ -78,12 +78,14 @@ class PCA():
         #Xtest nstrichxm
         #U  mxd
         Z=self.project(Xtest,m)
-        d=Xtest.shape[0]
+        d=Xtest.shape[1]
         n=Z.shape[0]
+        #print("Z",Z.shape,"d",d,"n",n)
         #X=np.zeros((n,d))
         X = np.repeat([np.mean(Xtest,axis=0)],n,axis=0)
-        print((np.mean(Xtest,axis=0)).shape,Z.shape,self.U.shape)#(Z@self.U).shape)
-        X=np.mean(Xtest,axis=0)+Z@self.U#+np.sum(Z@self.U,axis=0)
+        #print("U", self.U.shape)
+        #print(Xtest.shape,Z.shape,self.U.shape)#(Z@self.U).shape)
+        X=X+Z@(self.U[:,0:m]).T#+np.sum(Z@self.U,axis=0)
         return X
 
 
