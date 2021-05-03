@@ -88,15 +88,15 @@ class PCA():
         X=X+Z@(self.U[:,0:m]).T#+np.sum(Z@self.U,axis=0)
         return X
 
-
 def gammaidx(X, k):
     # Input : X  is a data-matrix (nxd)
     # Output : gamma  is a vector which contains the gamma-index for each datapoint (nx1)
     n=X.shape[0]
     gamma = np.zeros ((n))
     for i in range(X.shape[0]):
-        distance = np.linalg.norm( X[i] - X , axis = 1) # nx1
-        distance = np.argsort(distance)[:k+1]
+        distance = np.linalg.norm( X[i]-X , axis = 1) # nx1
+        distance[i] = np.inf
+        distance = np.sort(distance)[0:k]
         gamma[i] =(1/k)*np.sum(distance)
     return gamma
 
@@ -284,12 +284,4 @@ def adjacency_matrix(X,k):
             M[i,row] = 1
     return M
 
-X = np.array([[ -2.133268233289599,   0.903819474847349,   2.217823388231679, -0.444779660856219,
-                        -0.661480010318842,  -0.163814281248453,  -0.608167714051449,  0.949391996219125],
-                      [ -1.273486742804804,  -1.270450725314960,  -2.873297536940942,   1.819616794091556,
-                        -2.617784834189455,   1.706200163080549,   0.196983250752276,   0.501491995499840],
-                      [ -0.935406638147949,   0.298594472836292,   1.520579082270122,  -1.390457671168661,
-                        -1.180253547776717,  -0.194988736923602,  -0.645052874385757,  -1.400566775105519]]).T
-m = 2;
-PCA_obj = PCA(X)
-PCA_obj.denoise(X,m)
+
