@@ -13,6 +13,7 @@ import numpy as np
 import ps1_implementation as imp
 import scipy.io
 import matplotlib.pyplot as plt
+import networkx as nx 
 
 def usps():
     mat = scipy.io.loadmat('./data/usps.mat')
@@ -182,8 +183,41 @@ def lle_visualize(dataset='flatroll'):
         plt.show()
         #print(LLE[:,0],LLE[:,1].shape)
 
-def lle_noise():
+def lle_noise_08():
     ''' LLE under noise for assignment 8'''
+    flatroll = np.load('./data/flatroll_data.npz')
+    data = (flatroll["Xflat"]).T
+    reference = flatroll["true_embedding"]
+    noise = np.random.normal(0,0.2,(1000,2))
+    data = data+noise
+    param = 1
+    LLE = imp.lle(data, reference,"knn",param,tol=1e-2)
+    Y = np.ones((1000,1))
+    plt.scatter(LLE,Y,label=param)
+    plt.legend()
+    #M = nx.from_numpy_matrix(imp.adjacency_matrix(data,param))  
+    #data = np.array([[1,2],[6,3],[3,4],[6,7],[3,7],[3,9]])
+    #M= nx.from_numpy_matrix(imp.adjacency_matrix(data,param))
+    #print(imp.k_nearest_neighbor(data,1))
+    #nx.draw(M, with_labels=True) 
+    plt.show()
 
-def lle_noise():
+
+def lle_noise_18():
     ''' LLE under noise for assignment 8'''
+    flatroll = np.load('./data/flatroll_data.npz')
+    data = (flatroll["Xflat"]).T
+    reference = flatroll["true_embedding"]
+    noise = np.random.normal(0,1.8,(1000,2))
+    data = data+noise
+    param=20
+    LLE = imp.lle(data, reference,"knn",param,tol=1e-2)
+    Y = np.ones((1000,1))
+    plt.scatter(LLE,Y,label=param)
+    plt.legend()
+    #M = nx.from_numpy_matrix(imp.adjacency_matrix(data,param))  
+    #data = np.array([[1,2],[6,3],[3,4],[6,7],[3,7],[3,9]])
+    #M= nx.from_numpy_matrix(imp.adjacency_matrix(data,param))
+    #print(imp.k_nearest_neighbor(data,1))
+    #nx.draw(M, with_labels=True) 
+    plt.show()
