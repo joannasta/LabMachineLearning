@@ -13,7 +13,7 @@ import numpy as np
 import ps1_implementation as imp
 import scipy.io
 import matplotlib.pyplot as plt
-import networkx as nx 
+import networkx as nx
 
 def usps():
     mat = scipy.io.loadmat('./data/usps.mat')
@@ -21,6 +21,12 @@ def usps():
     L=mat.get("data_labels")
     P=mat.get("data_patterns")
     print(P.shape, L.shape)
+    X=P.T
+    X = X[:10].reshape((16,16,10,1))
+    X = X.reshape(160,16)
+    print(X.shape)
+    #X = X.transpose((0,2,1,3))
+    plt.imshow(X, cmap='inferno_r')
     #print(P)
 
     #2a) Perform the PCA
@@ -195,11 +201,11 @@ def lle_noise_08():
     Y = np.ones((1000,1))
     plt.scatter(LLE,Y,label=param)
     plt.legend()
-    #M = nx.from_numpy_matrix(imp.adjacency_matrix(data,param))  
+    #M = nx.from_numpy_matrix(imp.adjacency_matrix(data,param))
     #data = np.array([[1,2],[6,3],[3,4],[6,7],[3,7],[3,9]])
     #M= nx.from_numpy_matrix(imp.adjacency_matrix(data,param))
     #print(imp.k_nearest_neighbor(data,1))
-    #nx.draw(M, with_labels=True) 
+    #nx.draw(M, with_labels=True)
     plt.show()
 
 
@@ -215,9 +221,9 @@ def lle_noise_18():
     Y = np.ones((1000,1))
     plt.scatter(LLE,Y,label=param)
     plt.legend()
-    #M = nx.from_numpy_matrix(imp.adjacency_matrix(data,param))  
+    #M = nx.from_numpy_matrix(imp.adjacency_matrix(data,param))
     #data = np.array([[1,2],[6,3],[3,4],[6,7],[3,7],[3,9]])
     #M= nx.from_numpy_matrix(imp.adjacency_matrix(data,param))
     #print(imp.k_nearest_neighbor(data,1))
-    #nx.draw(M, with_labels=True) 
+    #nx.draw(M, with_labels=True)
     plt.show()
