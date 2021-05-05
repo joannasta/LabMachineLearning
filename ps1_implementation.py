@@ -158,7 +158,7 @@ def make_coordinates(y_true,y_pred,P,N):
 
 
 
-def lle(X, m, n_rule, k, epsilon=1e-2):
+def lle(X, m, n_rule, k, tol=1e-2):
     #print("m", m.shape, "X", X.shape)
     # Input X dxn matrix
     #Hyperparameter: n_rule, param, tol=1e-2
@@ -283,5 +283,3 @@ def adjacency_matrix(X,k):
             M[row,i] = 1
             M[i,row] = 1
     return M
-
-
