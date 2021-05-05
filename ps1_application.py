@@ -14,7 +14,6 @@ import ps1_implementation as imp
 import scipy.io
 import matplotlib.pyplot as plt
 import networkx as nx
-from matplotlib.collections import LineCollection
 
 def usps():
     mat = scipy.io.loadmat('./data/usps.mat')
@@ -91,31 +90,70 @@ def calc_indexes(dataset,outliers):
 def outliers_calc():
     banana = np.load('./data/banana.npz')
     dataset, labels = banana["data"], banana["label"]
-    k = 0.1
+    k = [0.01,0.1,0.5,1.0]
     rep=100
-    gamma3_List, gamma10_List,disToMean_List= np.zeros((rep)), np.zeros((rep)),np.zeros((rep))
+    gamma3_List_01, gamma10_List_01,disToMean_List_01= np.zeros((rep)), np.zeros((rep)),np.zeros((rep))
+    gamma3_List_10, gamma10_List_10,disToMean_List_10= np.zeros((rep)), np.zeros((rep)),np.zeros((rep))
+    gamma3_List_50, gamma10_List_50,disToMean_List_50= np.zeros((rep)), np.zeros((rep)),np.zeros((rep))
+    gamma3_List_100, gamma10_List_100,disToMean_List_100= np.zeros((rep)), np.zeros((rep)),np.zeros((rep))
+
+    print("entering for-loop")
+
     for i in range(rep):
         #1) Sample a random set of outliers (...)
         #k ist der Anteil der generierten Outliers
         #insgesamt 5300 Werte -> 1% =  53, 10%= 530, 50%=2650, 100%=5300
 
-        outliers = sample_outliers(k)
+        print("i =",i)
+        outliers01 = sample_outliers(k[0])
+        outliers10 = sample_outliers(k[1])
+        outliers50 = sample_outliers(k[2])
+        outliers100 = sample_outliers(k[3])
+     
+
 
         #2) Add the outliers, compute g-index with k=3, k=10 distance to the mean
-        gamma3,gamma10,disToMean = calc_indexes(dataset,outliers)
+        gamma3_01,gamma10_01,disToMean_01 = calc_indexes(dataset,outliers01)
+        gamma3_10,gamma10_10,disToMean_10 = calc_indexes(dataset,outliers10)
+        gamma3_50,gamma10_50,disToMean_50 = calc_indexes(dataset,outliers50)
+        gamma3_100,gamma10_100,disToMean_100 = calc_indexes(dataset,outliers100)
 
         # 3) compute the AUC
-        gamma3_List[i]    = (app_auc(gamma3, False))
-        gamma10_List[i]   = (app_auc(gamma10, False))
-        disToMean_List[i] = (app_auc(disToMean, False))
+        gamma3_List_01[i] ,gamma10_List_01[i] ,disToMean_List_01[i]  = (app_auc(gamma3_01, False)),(app_auc(gamma10_01, False)) ,(app_auc(disToMean_01, False))
+        gamma3_List_10[i] ,gamma10_List_10[i] ,disToMean_List_10[i]  = (app_auc(gamma3_10, False)),(app_auc(gamma10_10, False)) ,(app_auc(disToMean_10, False))
+        gamma3_List_50[i] ,gamma10_List_50[i] ,disToMean_List_50[i]  = (app_auc(gamma3_50, False)),(app_auc(gamma10_50, False)) ,(app_auc(disToMean_50, False))
+        gamma3_List_100[i] ,gamma10_List_100[i] ,disToMean_List_100[i]  = (app_auc(gamma3_100, False)),(app_auc(gamma10_100, False)) ,(app_auc(disToMean_100, False))
 
-    fig1, axs = plt.subplots(3)
-    #axs[0].set_title('gamma3 Plot')
-    axs[0].boxplot(gamma3_List)
+
+    print("preparing plots")
+    
+    fig1, axs = plt.subplots(12)
+    axs[0].boxplot(gamma3_List_01)
+    axs[0].set_title('gamma3 Plot, rate : 0.01')
+    axs[1].boxplot(gamma3_List_10)
+    axs[1].set_title('gamma3 Plot, rate : 0.10')
+    axs[2].boxplot(gamma3_List_50)
+    axs[2].set_title('gamma3 Plot, rate : 0.50')
+    axs[3].boxplot(gamma3_List_100)
+    axs[3].set_title('gamma3 Plot, rate : 1.00')
     #axs[1].set_title('gamma10 Plot')
-    axs[1].boxplot(gamma10_List)
+    axs[4].boxplot(gamma10_List_01)
+    axs[4].set_title('gamma3 Plot, rate : 0.01')
+    axs[5].boxplot(gamma10_List_10)
+    axs[5].set_title('gamma3 Plot, rate : 0.10')
+    axs[6].boxplot(gamma10_List_50)
+    axs[6].set_title('gamma3 Plot, rate : 0.50')
+    axs[7].boxplot(gamma10_List_100)
+    axs[7].set_title('gamma3 Plot, rate : 1.00')
     #axs[2].set_title('disToMean Plot')
-    axs[2].boxplot(disToMean_List)
+    axs[8].boxplot(disToMean_List_01)
+    axs[8].set_title('gamma3 Plot, rate : 0.01')
+    axs[9].boxplot(disToMean_List_10)
+    axs[9].set_title('gamma3 Plot, rate : 0.10')
+    axs[10].boxplot(disToMean_List_50)
+    axs[10].set_title('gamma3 Plot, rate : 0.50')
+    axs[11].boxplot(disToMean_List_100)
+    axs[11].set_title('gamma3 Plot, rate : 1.00')
     plt.show()
     # np.savez_compressed('outliers.npz', var1=var1, var2=var2, ...)
 
@@ -124,11 +162,11 @@ def exemplaryPlot():
     dataset, labels = banana["data"], banana["label"]
     outliers = sample_outliers(0.2)
     gamma3,gamma10,disToMean = calc_indexes(dataset,outliers)
-    gamma3 = (app_auc(gamma3, True))
-    gamma10 = (app_auc(gamma10, True))
-    disToMean = (app_auc(disToMean, True))
+    gamma3 = (app_auc(gamma3, False))
+    gamma10 = (app_auc(gamma10, False))
+    disToMean = (app_auc(disToMean, False))
     plt.scatter(dataset[0,::],dataset[1,::])
-    plt.scatter(outliers[0,p::],outliers[1,::])
+    plt.scatter(outliers[0,::],outliers[1,::])
     plt.show()
 
 
@@ -143,7 +181,7 @@ def lle_visualize(dataset='flatroll'):
     #1) 3D-plot
 
     #2) # n_rule: "knn" or "eps-ball"
-        #param: Anzahl der nearest neighbors oder gew. epsilon
+        #param: Anzahl der nearest neighbours oder gew. epsilon
         #imp.lle(fish_data, fish_reference, "knn", 50, 1e-2)
         #calculate lle
     #3) plot lle-embedding
@@ -157,9 +195,9 @@ def lle_visualize(dataset='flatroll'):
         data = (flatroll["Xflat"]).T
         reference = flatroll["true_embedding"]
         plt.scatter(data[:,0], data[:,1], cmap='Greens')
-
         LLE = imp.lle(data, reference, n_rule, param, tol=1e-2)
-        plt.scatter(LLE[:,0],LLE[:,1])
+        Y = np.ones((1000,1))
+        plt.scatter(LLE[:,0],Y)
         plt.show()
 
     if dataset == "fishbowl":
@@ -170,7 +208,6 @@ def lle_visualize(dataset='flatroll'):
         ax = plt.axes(projection='3d')
         zdata = 15 * np.random.random(2000)
         ax.scatter3D(data[:,0], data[:,1], data[:,2], c=zdata, cmap='Greens')
-
         LLE = imp.lle(data, reference, n_rule, param, tol=1e-2)
         plt.scatter(LLE[:,0],LLE[:,1])
         plt.show()
@@ -182,7 +219,8 @@ def lle_visualize(dataset='flatroll'):
         fig = plt.figure()
         ax = plt.axes(projection='3d')
         zdata = 15 * np.random.random(400)
-        #ax.scatter3D(data[:,0], data[:,1], data[:,2], c=zdata, cmap='Greens')
+        ax.scatter3D(data[:,0], data[:,1], data[:,2], c=zdata, cmap='Greens')
+
 
         reference = np.zeros((400,2))
         LLE = imp.lle(data, reference, n_rule, param, tol=1e-2)
