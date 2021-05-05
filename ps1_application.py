@@ -14,6 +14,7 @@ import ps1_implementation as imp
 import scipy.io
 import matplotlib.pyplot as plt
 import networkx as nx
+from matplotlib.collections import LineCollection
 
 def usps():
     mat = scipy.io.loadmat('./data/usps.mat')
@@ -142,7 +143,7 @@ def lle_visualize(dataset='flatroll'):
     #1) 3D-plot
 
     #2) # n_rule: "knn" or "eps-ball"
-        #param: Anzahl der nearest neighbours oder gew. epsilon
+        #param: Anzahl der nearest neighbors oder gew. epsilon
         #imp.lle(fish_data, fish_reference, "knn", 50, 1e-2)
         #calculate lle
     #3) plot lle-embedding
@@ -197,7 +198,7 @@ def lle_noise_08():
     noise = np.random.normal(0,0.2,(1000,2))
     data = data+noise
     param = 1
-    LLE = imp.lle(data, reference,"knn",param,tol=1e-2)
+    LLE = imp.lle(data, reference,"knn",param,1e-2)
     Y = np.ones((1000,1))
     plt.scatter(LLE,Y,label=param)
     plt.legend()
@@ -213,17 +214,48 @@ def lle_noise_18():
     ''' LLE under noise for assignment 8'''
     flatroll = np.load('./data/flatroll_data.npz')
     data = (flatroll["Xflat"]).T
+    N=data.shape[0]
     reference = flatroll["true_embedding"]
     noise = np.random.normal(0,1.8,(1000,2))
-    data = data+noise
+    #data = data+noise
     param=20
-    LLE = imp.lle(data, reference,"knn",param,tol=1e-2)
+    LLE = imp.lle(data, reference,"knn",param,1e-2)
     Y = np.ones((1000,1))
-    plt.scatter(LLE,Y,label=param)
-    plt.legend()
+    #plt.scatter(LLE,Y,label=param)
+    #plt.legend()
     #M = nx.from_numpy_matrix(imp.adjacency_matrix(data,param))
     #data = np.array([[1,2],[6,3],[3,4],[6,7],[3,7],[3,9]])
     #M= nx.from_numpy_matrix(imp.adjacency_matrix(data,param))
     #print(imp.k_nearest_neighbor(data,1))
     #nx.draw(M, with_labels=True)
+
+    #NEIGHBORHOOD Graph
+
+    #Code inspired and partially copied from
+    #https://stackoverflow.com/questions/50040310/efficient-way-to-connect-the-k-nearest-neighbors-in-a-scatterplot-using-matplotl
+
+    #DEFINE THE NEIGHBORHOOD PARAMETER
+    k=80
+
+    #0) GET THE NEIGHBORHOOD Matrix
+    neighbors = imp.k_nearest_neighbor(data, k)
+    #neighbors = imp.ebs_ball(data, k)
+
+    print(neighbors[0,0])
+    #1) GET EDGE COORDINATES
+    coordinates = np.zeros((N, k, 2, 2))
+    for i in np.arange(N):
+        for j in np.arange(k):
+            coordinates[i, j, :, 0] = np.array([data[i,:][0], data[int(neighbors[i, j]), :][0]])
+            coordinates[i, j, :, 1] = np.array([data[i,:][1], data[int(neighbors[i, j]), :][1]])
+
+    #2) create line artists
+    lines = LineCollection(coordinates.reshape((N*k, 2, 2)), color='black')
+
+    fig, ax = plt.subplots(1,1,figsize = (8, 8))
+    ax.scatter(data[:,0], data[:,1], c = 'black')
+    ax.add_artist(lines)
     plt.show()
+
+    #plt.scatter(data[:,0],data[:,1])
+    #plt.show()
