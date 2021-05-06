@@ -283,3 +283,5 @@ def adjacency_matrix(X,k):
             M[row,i] = 1
             M[i,row] = 1
     return M
+
+
