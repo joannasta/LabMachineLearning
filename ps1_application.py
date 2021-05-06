@@ -127,34 +127,45 @@ def outliers_calc():
 
     print("preparing plots")
     
-    fig1, axs = plt.subplots(12)
-    axs[0].boxplot(gamma3_List_01)
-    axs[0].set_title('gamma3 Plot, rate : 0.01')
-    axs[1].boxplot(gamma3_List_10)
-    axs[1].set_title('gamma3 Plot, rate : 0.10')
-    axs[2].boxplot(gamma3_List_50)
-    axs[2].set_title('gamma3 Plot, rate : 0.50')
-    axs[3].boxplot(gamma3_List_100)
-    axs[3].set_title('gamma3 Plot, rate : 1.00')
-    #axs[1].set_title('gamma10 Plot')
-    axs[4].boxplot(gamma10_List_01)
-    axs[4].set_title('gamma3 Plot, rate : 0.01')
-    axs[5].boxplot(gamma10_List_10)
-    axs[5].set_title('gamma3 Plot, rate : 0.10')
-    axs[6].boxplot(gamma10_List_50)
-    axs[6].set_title('gamma3 Plot, rate : 0.50')
-    axs[7].boxplot(gamma10_List_100)
-    axs[7].set_title('gamma3 Plot, rate : 1.00')
-    #axs[2].set_title('disToMean Plot')
-    axs[8].boxplot(disToMean_List_01)
-    axs[8].set_title('gamma3 Plot, rate : 0.01')
-    axs[9].boxplot(disToMean_List_10)
-    axs[9].set_title('gamma3 Plot, rate : 0.10')
-    axs[10].boxplot(disToMean_List_50)
-    axs[10].set_title('gamma3 Plot, rate : 0.50')
-    axs[11].boxplot(disToMean_List_100)
-    axs[11].set_title('gamma3 Plot, rate : 1.00')
+    gamma3 = [gamma3_List_01,gamma3_List_10,gamma3_List_50,gamma3_List_100]
+    gamma10 = [gamma10_List_01,gamma10_List_10,gamma10_List_50,gamma10_List_100]
+    distToMean = [disToMean_List_01,disToMean_List_10,disToMean_List_50,disToMean_List_100]
+
+    labels = ['0.01', '0.1', '0.5','1.0']
+    fig, (ax1, ax2,ax3) = plt.subplots(nrows=1, ncols=3, figsize=(9, 4))
+    # rectangular box plot
+    bplot1 = ax1.boxplot(gamma3,
+                     vert=True,  # vertical box alignment
+                     patch_artist=True,  # fill with color
+                     labels=labels)  # will be used to label x-ticks
+    ax1.set_title('gamma3')
+
+    # notch shape box plot
+    bplot2 = ax2.boxplot(gamma10,
+                     vert=True,  # vertical box alignment
+                     patch_artist=True,  # fill with color
+                     labels=labels)  # will be used to label x-ticks
+    ax2.set_title('gamma10')
+
+    bplot3 = ax3.boxplot(distToMean,
+                     vert=True,  # vertical box alignment
+                     patch_artist=True,  # fill with color
+                     labels=labels)  # will be used to label x-ticks
+    ax3.set_title('Distance to Mean')
+    # fill with colors
+    colors = ['pink', 'lightblue', 'lightgreen']
+    for bplot in (bplot1, bplot2,bplot3):
+        for patch, color in zip(bplot['boxes'], colors):
+            patch.set_facecolor(color)
+
+    # adding horizontal grid lines
+    for ax in [ax1, ax2,ax3]:
+        ax.yaxis.grid(True)
+        ax.set_xlabel('contamination rates')
+        #ax.set_ylabel('Observed values')
+
     plt.show()
+   
     # np.savez_compressed('outliers.npz', var1=var1, var2=var2, ...)
 
 def exemplaryPlot():
@@ -194,37 +205,54 @@ def lle_visualize(dataset='flatroll'):
         flatroll = np.load('./data/flatroll_data.npz')
         data = (flatroll["Xflat"]).T
         reference = flatroll["true_embedding"]
-        plt.scatter(data[:,0], data[:,1], cmap='Greens')
+        print(reference.shape)
+        #plt.scatter(data[:,0], data[:,1], cmap='Greens')
         LLE = imp.lle(data, reference, n_rule, param, tol=1e-2)
-        Y = np.ones((1000,1))
-        plt.scatter(LLE[:,0],Y)
+        fig, ax = plt.subplots()
+        #Y = np.ones((1000,1))
+        scatter = ax.scatter(LLE[:,0],reference[0,:])
+        legend1 = ax.legend(*scatter.legend_elements(),
+                    loc="lower left", title="Classes")
+        ax.add_artist(legend1)
+        plt.legend()
         plt.show()
 
     if dataset == "fishbowl":
         fishbowl = np.load('./data/fishbowl_dense.npz')
         data = fishbowl["X"].T
         reference = fishbowl["X"].T[:,2]
-        fig = plt.figure()
-        ax = plt.axes(projection='3d')
-        zdata = 15 * np.random.random(2000)
-        ax.scatter3D(data[:,0], data[:,1], data[:,2], c=zdata, cmap='Greens')
+        print(reference.shape)
+        #fig = plt.figure()
+        #ax = plt.axes(projection='3d')
+        #zdata = 15 * np.random.random(2000)
+        #ax.scatter3D(data[:,0], data[:,1], data[:,2], c=zdata, cmap='Greens')
         LLE = imp.lle(data, reference, n_rule, param, tol=1e-2)
-        plt.scatter(LLE[:,0],LLE[:,1])
+        fig, ax = plt.subplots()
+        ax.scatter(LLE[:,0],LLE[:,1],label="LLE-embedding")
+        ax.scatter(reference[:,0],reference[:,1],label="Reference-data")
+        plt.legend()
         plt.show()
 
     if dataset == "swissroll":
         swissroll = np.load('./data/swissroll_data.npz')
         data = (swissroll["x_noisefree"]).T
         reference = swissroll["z"].T[:,0]
-        fig = plt.figure()
-        ax = plt.axes(projection='3d')
-        zdata = 15 * np.random.random(400)
-        ax.scatter3D(data[:,0], data[:,1], data[:,2], c=zdata, cmap='Greens')
+        print(reference.shape)
+        #fig = plt.figure()
+        #ax = plt.axes(projection='3d')
+        #zdata = 15 * np.random.random(400)
+        #ax.scatter3D(data[:,0], data[:,1], data[:,2], c=zdata, cmap='Greens')
 
 
         reference = np.zeros((400,2))
         LLE = imp.lle(data, reference, n_rule, param, tol=1e-2)
-        ax.scatter(LLE[:,0],LLE[:,1], c='r')
+        fig, ax = plt.subplots()
+        ax.scatter(LLE[:,0],LLE[:,1], c='r',label="LLE-embedding")
+        #ax.scatter(reference[:,0],reference[:,1])
+        ax.scatter(LLE[:,0],reference[:,0],label="reference with LLE-embedding")
+        #legend1 = ax.legend(*scatter.legend_elements(),loc="lower left", title="Classes")
+        #ax.add_artist(legend1)
+        plt.legend()
         plt.show()
         #print(LLE[:,0],LLE[:,1].shape)
 
