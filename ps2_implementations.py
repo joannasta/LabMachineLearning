@@ -38,17 +38,19 @@ def kmeans(X,k,max_iter=100):
             rnew[j] = np.argmin(np.linalg.norm(X[j,:]-mu,axis=-1)**2,axis=-1)
         for t in range(k):
             mu[t,:] = np.mean(X[rnew==t],axis=0)
-        loss = kmeans_crit(X,r)
-        print("loss = ",loss)
+        
         plt.scatter(X[:,0],X[:,1],c="b")
         plt.scatter(mu[:,0],mu[:,1],c="r")
         plt.show()
         if np.all(r == rnew):
             print("number of cluster memberships which changed in the preceding step = ",0)
+            print("loss = ",0)
             break
         else:
             print("number of cluster memberships which changed in the preceding step = ",np.size(r==rnew)-np.count_nonzero(r==rnew))
             r = rnew
+            loss = kmeans_agglo(X,r)
+            print("loss = ",loss)
     return mu, r, loss
 
 def kmeans_agglo(X, r):
@@ -75,16 +77,16 @@ def kmeans_agglo(X, r):
         Output:
         value: scalar for sum of euclidean distances to cluster centers
         """
-
         X=X.T
-        Loss = 0
-        for label in np.unique(r):
-            delta = np.argwhere(r==label).flatten()
-            tmp = X[delta,:]
-            mu = np.mean(tmp,axis=0)
-            Loss += np.sum(np.linalg.norm(tmp - mu)**2,axis=0)
+        n = X.shape[0]
+        Loss=0
+        for i in range(n):
+                for label in np.unique(r):
+                    delta = np.argwhere(r==label).flatten()
+                    tmp = X[i,delta]
+                    mu = np.mean(tmp,axis=0)
+                    Loss += np.sum(np.linalg.norm(tmp - mu)**2,axis=0)
         return Loss
-    
     return kmeans_crit(X,r)
 #X = np.array([[1,0,2,3,1,2,4,2,4,1],[1,0,2,3,1,2,4,2,4,1]])
 #r = np.array([[1,0,2,3,1,2,4,2,4,1]])
@@ -107,7 +109,7 @@ def test_kmeans():
     worked2 = False
 
     for _ in range(10):
-        mu, r = kmeans(X, k=3)
+        mu, r,loss = kmeans(X, k=3)
         if (r[0]==r[1]==r[2]!=r[3] and r[3]==r[4]==r[5]!=r[6] and r[6]==r[7]==r[8]):
             worked1 = True
 
