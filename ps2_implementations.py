@@ -44,8 +44,10 @@ def kmeans(X,k,max_iter=100):
         plt.scatter(mu[:,0],mu[:,1],c="r")
         plt.show()
         if np.all(r == rnew):
+            print("number of cluster memberships which changed in the preceding step = ",0)
             break
         else:
+            print("number of cluster memberships which changed in the preceding step = ",np.size(r==rnew)-np.count_nonzero(r==rnew))
             r = rnew
     return mu, r, loss
 
