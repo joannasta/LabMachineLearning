@@ -33,27 +33,43 @@ def kmeans(X,k,max_iter=100):
         Output: mu: (d x k) matrix with each cluster center in one column
                 r: assignment vector   """
     n,d= X.shape
-    mu = np.random.rand(k,d)+ np.mean(X,axis=0)
+    #print("n,d",X.shape)
+    #mu = np.random.rand(k,d)+ np.mean(X,axis=0)
+    #mu = X[:k].copy()
+    rng = np.random.default_rng()
+    mu = rng.choice(X,(k),replace=False)
     r ,r_new = np.zeros(n), np.zeros(n)
+    #fig , axs = plt.subplots(10)
     for i in range(max_iter):
-        print("iteration = ",i)
+        #print("iteration = ",i)
         for j in range(n):
-            r_new[j] = np.argmin(np.linalg.norm(X[j,:]-mu,axis=-1)**2,axis=-1)
+            #print("np.linalg.norm(X[j,:]-mu,axis=0)",np.linalg.norm(X[j,:]-mu,axis=0).shape)
+            #print("np.linalg.norm(X[j,:]-mu,axis=1)",np.linalg.norm(X[j,:]-mu,axis=1).shape)
+            #print("np.linalg.norm(X[j,:]-mu,axis=-1)",np.linalg.norm(X[j,:]-mu,axis=-1).shape)
+            #print("X[j,:].shape",X[j,:].shape,"mu",mu.shape)
+            #print("np.argmin(np.linalg.norm(X[j,:]-mu,axis=-1)**2,axis=-1)",np.argmin(np.linalg.norm(X[j,:]-mu,axis=-1)**2,axis=-1))
+            r_new[j] = np.argmin(np.linalg.norm(X[j,:]-mu,axis=1)**2)
         for t in range(k):
-            mu[t,:] = np.mean(X[r_new==t],axis=0)#hier noch mit np.where arbeiten [t,:]
+            #print("r_new",r_new)
+            if (X[r_new==t].size >0):
+                mu[t,:] = np.mean(X[r_new==t],axis=0)#hier noch mit np.where arbeiten [t,:]
+            else:
+                pass
             plt.scatter(X[t==r_new,0],X[t==r_new,1],label=t)
         plt.scatter(mu[:,0],mu[:,1],c="r",label="mean")
         plt.legend()
         plt.show()
+        #print("r",r,"r_new",r_new)
+        #print("mu")
         if np.all(r == r_new):
-            print("number of cluster memberships which changed in the preceding step = ",0)
-            print("loss = ",0)
+            #print("number of cluster memberships which changed in the preceding step = ",0)
+            #print("loss = ",0)
             break
         else:
-            print("number of cluster memberships which changed in the preceding step = ",np.size(r==r_new)-np.count_nonzero(r==r_new))
-            r = r_new
+            #print("number of cluster memberships which changed in the preceding step = ",np.size(r==r_new)-np.count_nonzero(r==r_new))
+            r = r_new.copy()
             loss = kmeans_agglo(X,r)
-            print("loss = ",loss)
+            #print("loss = ",loss)
     return mu, r,loss
 
 def kmeans_agglo(X, r, showSizes = False):
@@ -196,8 +212,8 @@ def agglo_dendro(kmloss, mergeidx):
     plt.show()
     return linkMat
 
-def norm_pdf(X, mu, C):
-    """ Computes probability density function for multivariate gaussian
+"""def norm_pdf(X, mu, C):
+    Computes probability density function for multivariate gaussian
 
     Input:
     X: (d x n) data matrix with each datapoint in one column
@@ -206,7 +222,7 @@ def norm_pdf(X, mu, C):
 
     Output:
     pdf value for each data point (n,)
-    """
+    
     d,n = X.shape
     X = X.T
     
@@ -235,10 +251,34 @@ def norm_pdf(X, mu, C):
         y = (1/y0y1)*(np.exp(y2y3y4))
 
     return y
-"""
+
 
 """
+def norm_pdf(x, mean, covariance):
+    """computes probability density function for multivariate gaussian
 
+    Input:
+    X: (d x n) data matrix with each datapoint in one column
+    mu: vector for center (d,)
+    C: covariance matrix (d,d)
+
+    Output:
+    pdf value for each data point (n,) """
+    try:
+        d,n = x.shape
+        x_m = x - mean
+        try: 
+            y = (1. / (np.sqrt((2 * np.pi)**d * np.linalg.det(covariance))) * 
+                np.exp(-(np.linalg.solve(covariance, x_m).T.dot(x_m)) / 2))
+        except:
+            covariance = covariance + np.random.rand( d,d)*10
+            y = (1. / (np.sqrt((2 * np.pi)**d * np.linalg.det(covariance))) * 
+                np.exp(-(np.linalg.solve(covariance, x_m).T.dot(x_m)) / 2))
+    except:
+        y = ((1. / np.sqrt(2 * np.pi * covariance)) * 
+            np.exp(-(x - mean)**2 / (2 * covariance)))
+        
+    return y
 
 
 def em_gmm(X, k, max_iter=100, init_kmeans=False, eps=1e-3):
