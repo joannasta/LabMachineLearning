@@ -254,7 +254,10 @@ def agglo_dendro(kmloss, mergeidx):
 
 
 """
-def norm_pdf(x, mean, covariance):
+
+
+
+def norm_pdf(xi, mu, C):
     """computes probability density function for multivariate gaussian
 
     Input:
@@ -264,22 +267,17 @@ def norm_pdf(x, mean, covariance):
 
     Output:
     pdf value for each data point (n,) """
-    try:
-        d,n = x.shape
-        x_m = x - mean
-        try: 
-            y = (1. / (np.sqrt((2 * np.pi)**d * np.linalg.det(covariance))) * 
-                np.exp(-(np.linalg.solve(covariance, x_m).T.dot(x_m)) / 2))
-        except:
-            covariance = covariance + np.random.rand( d,d)*10
-            y = (1. / (np.sqrt((2 * np.pi)**d * np.linalg.det(covariance))) * 
-                np.exp(-(np.linalg.solve(covariance, x_m).T.dot(x_m)) / 2))
-    except:
-        y = ((1. / np.sqrt(2 * np.pi * covariance)) * 
-            np.exp(-(x - mean)**2 / (2 * covariance)))
-        
-    return y
-
+    d = len(xi)
+    xi = xi[:,np.newaxis]
+    xi = T(xi)
+    first = 1/((2 * math.pi)**(d/2) * det(C)**(1/2))
+    t1 = xi - mu
+    #t2 = inverse(C)
+    t3 = T(xi-mu)
+    t2_ = solve(C,t3)
+    t1t2t3 = t1 @ t2_
+    second = np.exp(-1/2 * t1t2t3 )
+    return (first*second)[0][0]
 
 def em_gmm(X, k, max_iter=100, init_kmeans=False, eps=1e-3):
     """ Implements EM for Gaussian Mixture Models
@@ -297,7 +295,51 @@ def em_gmm(X, k, max_iter=100, init_kmeans=False, eps=1e-3):
     sigma: list of d x d covariance matrices
     """
 
-    pass
+    n = len(X)
+    d = len(X[0])
+    pi = [1/K for k in range(K)]
+    rng = np.random.default_rng()
+    mu = rng.choice(X,(K),replace=False)
+    sigma = [I(d) for k in range(K)]
+    gamma = [[0 for i in range(K)] for k in range(n)]
+    eta = [None for k in range(K)]
+    for _ in range(max_iter):
+        gamma_ =[[gamma[k][i] for i in range(K)] for k in range(n)]
+        for k in range(K):
+            for i in range(n):
+                dividend = pi[k] * norm_pdf(X[i], mu[k], sigma[k])
+                divisor = sum([(pi[k_] * norm_pdf(X[i], mu[k_], sigma[k_])) for k_ in range(K)])
+                gamma[i][k] = dividend / divisor
+
+
+        for k in range(K):
+            eta[k] = sum([gamma[i][k] for i in range(n)])
+            pi[k] = eta[k]/n
+            mu[k] = 1/eta[k] * sum([(gamma[i][k] * X[i]) for i in range(n)])
+            s = 0
+            for i in range(n):
+                tmp = (X[i] - mu[k])[:,np.newaxis]
+                s += gamma[i][k] * tmp * T(tmp)
+            sigma[k] = 1/eta[k] * s
+        if np.all(np.abs(np.array(gamma_)-np.array(gamma))<tol):
+            break
+    loglik = gamma
+    return pi,mu,sigma,loglik
+def I(n):
+    return np.eye(n)
+
+def T(M):
+    return M.T
+
+def det(M): # determinante
+    return np.linalg.det(M)
+
+def inverse(M): # inverse
+    return np.linalg.inv(M) 
+def solve(A,b):
+    A = A + np.random.normal(0 ,0.1,len(b))
+    tmp = np.linalg.lstsq(A,b)[0]
+    return np.nan_to_num(tmp)
 
 def plot_gmm_solution(X, mu, sigma):
     """ Plots covariance ellipses for GMM
