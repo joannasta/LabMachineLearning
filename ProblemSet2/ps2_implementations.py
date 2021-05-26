@@ -33,28 +33,21 @@ def kmeans(X,k,max_iter=100):
         Output: mu: (d x k) matrix with each cluster center in one column
                 r: assignment vector   """
     n,d= X.shape
-    #print("n,d",X.shape)
     #mu = np.random.rand(k,d)+ np.mean(X,axis=0)
     #mu = X[:k].copy()
     rng = np.random.default_rng()
     mu = rng.choice(X,(k),replace=False)
     r ,r_new = np.zeros(n), np.zeros(n)
-    #fig , axs = plt.subplots(10)
     for i in range(max_iter):
-        #print("iteration = ",i)
+        print("iteration = ",i)
         for j in range(n):
-            #print("np.linalg.norm(X[j,:]-mu,axis=0)",np.linalg.norm(X[j,:]-mu,axis=0).shape)
-            #print("np.linalg.norm(X[j,:]-mu,axis=1)",np.linalg.norm(X[j,:]-mu,axis=1).shape)
-            #print("np.linalg.norm(X[j,:]-mu,axis=-1)",np.linalg.norm(X[j,:]-mu,axis=-1).shape)
-            #print("X[j,:].shape",X[j,:].shape,"mu",mu.shape)
-            #print("np.argmin(np.linalg.norm(X[j,:]-mu,axis=-1)**2,axis=-1)",np.argmin(np.linalg.norm(X[j,:]-mu,axis=-1)**2,axis=-1))
             r_new[j] = np.argmin(np.linalg.norm(X[j,:]-mu,axis=1)**2)
         for t in range(k):
-            #print("r_new",r_new)
+            print("r_new",r_new)
             if (X[r_new==t].size >0):
                 mu[t,:] = np.mean(X[r_new==t],axis=0)#hier noch mit np.where arbeiten [t,:]
             else:
-                pass
+                mu[t,:] = np.mean(rng.choice(X,(k),replace=False))
             plt.scatter(X[t==r_new,0],X[t==r_new,1],label=t)
         plt.scatter(mu[:,0],mu[:,1],c="r",label="mean")
         plt.legend()
@@ -62,14 +55,14 @@ def kmeans(X,k,max_iter=100):
         #print("r",r,"r_new",r_new)
         #print("mu")
         if np.all(r == r_new):
-            #print("number of cluster memberships which changed in the preceding step = ",0)
-            #print("loss = ",0)
+            print("number of cluster memberships which changed in the preceding step = ",0)
+            print("loss = ",0)
             break
         else:
-            #print("number of cluster memberships which changed in the preceding step = ",np.size(r==r_new)-np.count_nonzero(r==r_new))
+            print("number of cluster memberships which changed in the preceding step = ",np.size(r==r_new)-np.count_nonzero(r==r_new))
             r = r_new.copy()
             loss = kmeans_agglo(X,r)
-            #print("loss = ",loss)
+            print("loss = ",loss)
     return mu, r,loss
 
 def kmeans_agglo(X, r, showSizes = False):
@@ -149,26 +142,6 @@ def kmeans_crit(X, r):
             mu = np.mean(tmp,axis=0)
             Loss += np.sum(np.linalg.norm(tmp - mu)**2,axis=0)
     return Loss
-"""
-def kmeans_crit(X, r):
-     Computes k-means criterion
-
-    Input:
-    X: (d x n) data matrix with each datapoint in one column
-    r: assignment vector
-
-    Output:
-    value: scalar for sum of euclidean distances to cluster centers
-    
-    #X=X.T
-    Loss = 0
-    for label in np.unique(r):
-        delta = np.argwhere(r==label).flatten()
-        tmp = X[delta,:]
-        mu = np.mean(tmp,axis=0)
-        Loss += np.sum(np.linalg.norm(tmp - mu)**2,axis=0)
-    return Loss
-"""
 
 
 
@@ -254,32 +227,27 @@ def agglo_dendro(kmloss, mergeidx):
 
 
 """
-
-
-
 def norm_pdf(xi, mu, C):
-    """computes probability density function for multivariate gaussian
-
-    Input:
-    X: (d x n) data matrix with each datapoint in one column
-    mu: vector for center (d,)
-    C: covariance matrix (d,d)
-
-    Output:
-    pdf value for each data point (n,) """
-    d = len(xi)
     xi = xi[:,np.newaxis]
-    xi = T(xi)
-    first = 1/((2 * math.pi)**(d/2) * det(C)**(1/2))
-    t1 = xi - mu
-    #t2 = inverse(C)
-    t3 = T(xi-mu)
-    t2_ = solve(C,t3)
-    t1t2t3 = t1 @ t2_
-    second = np.exp(-1/2 * t1t2t3 )
-    return (first*second)[0][0]
+    print(xi.shape)
+    n,d = xi.shape
+    xi = xi.T
+    try:
+        const = 1/((2*np.pi)**(d/2) * np.linalg.det(C)**(1/2))
+    except :
+        C = C + np.random.normal(0 ,0.1,d)
+        const = 1/((2*np.pi)**(d/2) * np.linalg.det(C)**(1/2))
+    xm = xi-mu
+    print("xm",xm.shape,xm)
+    term = np.exp((-1/2)* xm@np.linalg.solve(C,xm.T))
+    yi = const*term
+    return yi 
 
-def em_gmm(X, k, max_iter=100, init_kmeans=False, eps=1e-3):
+        
+        
+            
+
+def em_gmm(X, K, max_iter=30, init_kmeans=True, eps=1e-3):
     """ Implements EM for Gaussian Mixture Models
 
     Input:
@@ -293,53 +261,45 @@ def em_gmm(X, k, max_iter=100, init_kmeans=False, eps=1e-3):
     pi: 1 x k matrix of priors
     mu: (d x k) matrix with each cluster center in one column
     sigma: list of d x d covariance matrices
+    d = 2
+    n = 9
     """
-
-    n = len(X)
-    d = len(X[0])
-    pi = [1/K for k in range(K)]
-    rng = np.random.default_rng()
-    mu = rng.choice(X,(K),replace=False)
-    sigma = [I(d) for k in range(K)]
-    gamma = [[0 for i in range(K)] for k in range(n)]
-    eta = [None for k in range(K)]
+    n,d = X.shape
+    print("n,d",n,d)
+    pi = np.array([1/K]*K)
+    if init_kmeans:
+        mu,r,loss = kmeans(X,K)
+    else:
+        rng = np.random.default_rng()
+        mu = rng.choice(X,(k),replace=False)
+    sigma = [np.eye(d)]*K
+    gamma = np.zeros((K,n))
+    gamma_ = np.zeros((K,n))
+    eta = np.zeros(K)
+    
     for _ in range(max_iter):
-        gamma_ =[[gamma[k][i] for i in range(K)] for k in range(n)]
+        gamma_ = gamma
         for k in range(K):
             for i in range(n):
-                dividend = pi[k] * norm_pdf(X[i], mu[k], sigma[k])
+                dividend = pi[k]* norm_pdf(X[i],mu[k],sigma[k])
                 divisor = sum([(pi[k_] * norm_pdf(X[i], mu[k_], sigma[k_])) for k_ in range(K)])
-                gamma[i][k] = dividend / divisor
-
-
+                gamma[k,i] = dividend/divisor
+                
         for k in range(K):
-            eta[k] = sum([gamma[i][k] for i in range(n)])
+            eta[k] = sum([gamma[k,i] for i in range(n)])
             pi[k] = eta[k]/n
-            mu[k] = 1/eta[k] * sum([(gamma[i][k] * X[i]) for i in range(n)])
-            s = 0
+            mu[k] = 1/eta[k] * sum([(gamma[k,i] * X[i]) for i in range(n)])
+            s=0
             for i in range(n):
                 tmp = (X[i] - mu[k])[:,np.newaxis]
-                s += gamma[i][k] * tmp * T(tmp)
+                s += gamma[k,i] * tmp * tmp.T
             sigma[k] = 1/eta[k] * s
-        if np.all(np.abs(np.array(gamma_)-np.array(gamma))<tol):
-            break
+            if np.all(np.abs(np.array(gamma_)-np.array(gamma))<eps):
+                break
+        
     loglik = gamma
     return pi,mu,sigma,loglik
-def I(n):
-    return np.eye(n)
-
-def T(M):
-    return M.T
-
-def det(M): # determinante
-    return np.linalg.det(M)
-
-def inverse(M): # inverse
-    return np.linalg.inv(M) 
-def solve(A,b):
-    A = A + np.random.normal(0 ,0.1,len(b))
-    tmp = np.linalg.lstsq(A,b)[0]
-    return np.nan_to_num(tmp)
+                    
 
 def plot_gmm_solution(X, mu, sigma):
     """ Plots covariance ellipses for GMM
@@ -418,3 +378,31 @@ def kmeans_usps_test ():
     P=mat.get("data_patterns")
     kmeans(P,10)
     pass
+def test_em_gmm():
+    X = np.array([[0., 1., 1., 10., 10.25, 11., 10., 10.25, 11.],
+                  [0., 0., 1.,  0.,   0.5,  0.,  5.,   5.5,  5.]]).T
+    perfect_r = [1,0,1,2,2,1,2,2,2]
+    worked1 = False
+    worked2 = False
+    for _ in range(10):
+        mpi, mu, sigma, _ = imp.em_gmm(X, k=3)
+        # test one cluster center
+        if (np.linalg.norm(mu[0] - [10.41666, 0.1666]) < 0.1 or
+            np.linalg.norm(mu[1] - [10.41666, 0.1666]) < 0.1 or
+            np.linalg.norm(mu[2] - [10.41666, 0.1666]) < 0.1):
+            worked1 = True
+        if ((np.abs(np.linalg.det(sigma[0]) - 0.03703) < 0.001 or
+            np.abs(np.linalg.det(sigma[1]) - 0.03703) < 0.001 or
+            np.abs(np.linalg.det(sigma[2]) - 0.03703) < 0.001) and
+            (np.abs(np.linalg.det(sigma[0]) - 0.00925) < 0.001 or
+            np.abs(np.linalg.det(sigma[1]) - 0.00925) < 0.0001 or
+            np.abs(np.linalg.det(sigma[2]) - 0.00925) < 0.0001)):
+            worked2 = True
+        if worked1 and worked2:
+            imp.plot_gmm_solution(X, mu, sigma)
+            break
+
+    if not worked1:
+        raise AssertionError('test_em_gmm did not find the correct cluster center.')
+    if not worked2:
+        raise AssertionError('test_em_gmm did not find the correct cluster center.')
