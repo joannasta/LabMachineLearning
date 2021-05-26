@@ -185,48 +185,6 @@ def agglo_dendro(kmloss, mergeidx):
     plt.show()
     return linkMat
 
-"""def norm_pdf(X, mu, C):
-    Computes probability density function for multivariate gaussian
-
-    Input:
-    X: (d x n) data matrix with each datapoint in one column
-    mu: vector for center (d,)
-    C: covariance matrix (d,d)
-
-    Output:
-    pdf value for each data point (n,)
-    
-    d,n = X.shape
-    X = X.T
-    
-    print("X",X.shape)
-    print("mu",mu.shape)
-    print("C",C.shape)
-    
-    try:
-        y = (1/(((2*np.pi)**(d/2))*(np.linalg.det(C))**(1/2)))*(np.exp(((-0.5)*(X-mu).T)*(np.linalg.inv(C))*(X-mu)))
-    except:
-        print("C before noise",C)
-        C = C + np.random.rand( d,d)*10
-        print("C after noise",C)
-        y0 = ((2*np.pi)**(d/2))
-        print("y0",y0)
-        y1 = (np.linalg.det(C))**(1/2)
-        print("y1",y1)
-        y2 =(-0.5)*(X-mu).T
-        y3 = (np.linalg.inv(C))
-        y4 = (X-mu)
-        y0y1 = (y0*y1)
-        print("y2",y2.shape,"y3",y3.shape)
-        y2y3 = y2.T@y3
-        print(y2y3.shape,y4.shape)
-        y2y3y4 = y2y3@y4.T
-        y = (1/y0y1)*(np.exp(y2y3y4))
-
-    return y
-
-
-"""
 def norm_pdf(xi, mu, C):
     xi = xi[:,np.newaxis]
     print("C",C)
@@ -316,6 +274,19 @@ def plot_gmm_solution(X, mu, sigma):
     mu: (d x k) matrix with each cluster center in one column
     sigma: list of d x d covariance matrices
     """
+    fig, ax = plt.subplots(subplot_kw={'aspect': 'equal'})
+    lambdas,vectors = np.linalg.eig(sigma)
+    print("lambdas,vectors",lambdas,vectors)
+    for i in range(mu.shape[0]):
+        ellipse = Ellipse((mu[i,0],mu[i,1]), width=lambda_[i,0]*i*2, height=lambda_[i,1]*i*2
+                          ,angle=np.rad2deg(np.arccos(v[0, 0])))
+        ax.add_artist(ellipse)
+        ax.set_xlim(-2.2, 2.2)
+        ax.set_ylim(-2.2, 2.2)
+        ax.scatter(X[:,0],X[:,1],label="em_gmm")
+        #print("mu[:,0]",mu[:,0],"mu[:,1]",mu[:,1],"mu",mu.shape)
+        ax.scatter(mu[:,0],mu[:,1],label="em_gmm-mean")
+    plt.show()
 
     pass
 def test_crit():
