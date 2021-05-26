@@ -229,20 +229,23 @@ def agglo_dendro(kmloss, mergeidx):
 """
 def norm_pdf(xi, mu, C):
     xi = xi[:,np.newaxis]
-    print(xi.shape)
+    print("C",C)
     n,d = xi.shape
     xi = xi.T
     try:
         const = 1/((2*np.pi)**(d/2) * np.linalg.det(C)**(1/2))
+        xm = xi-mu
+        #print("xm",xm.shape,xm)
+        term = np.exp((-1/2)* xm@np.linalg.solve(C,xm.T))
+        yi = const*term
     except :
         C = C + np.random.normal(0 ,0.1,d)
         const = 1/((2*np.pi)**(d/2) * np.linalg.det(C)**(1/2))
-    xm = xi-mu
-    print("xm",xm.shape,xm)
-    term = np.exp((-1/2)* xm@np.linalg.solve(C,xm.T))
-    yi = const*term
-    return yi 
-
+        xm = xi-mu
+        #print("xm",xm.shape,xm)
+        term = np.exp((-1/2)* xm@np.linalg.solve(C,xm.T))
+        yi = const*term
+    return yi
         
         
             
@@ -278,11 +281,12 @@ def em_gmm(X, K, max_iter=30, init_kmeans=True, eps=1e-3):
     eta = np.zeros(K)
     
     for _ in range(max_iter):
+        print("durchgang",_)
         gamma_ = gamma
         for k in range(K):
             for i in range(n):
-                dividend = pi[k]* norm_pdf(X[i],mu[k],sigma[k])
-                divisor = sum([(pi[k_] * norm_pdf(X[i], mu[k_], sigma[k_])) for k_ in range(K)])
+                dividend = pi[k]* norm_pdf(X[i,:],mu[k],sigma[k])
+                divisor = sum([(pi[k_] * norm_pdf(X[i,:], mu[k_], sigma[k_])) for k_ in range(K)])
                 gamma[k,i] = dividend/divisor
                 
         for k in range(K):
@@ -292,13 +296,16 @@ def em_gmm(X, K, max_iter=30, init_kmeans=True, eps=1e-3):
             s=0
             for i in range(n):
                 tmp = (X[i] - mu[k])[:,np.newaxis]
+                print("tmp",tmp)
+                print("gamma[k,i]",gamma[k,i])
                 s += gamma[k,i] * tmp * tmp.T
             sigma[k] = 1/eta[k] * s
-            if np.all(np.abs(np.array(gamma_)-np.array(gamma))<eps):
+        if np.all(np.abs(np.array(gamma_)-np.array(gamma))<eps):
                 break
         
     loglik = gamma
     return pi,mu,sigma,loglik
+                    
                     
 
 def plot_gmm_solution(X, mu, sigma):
