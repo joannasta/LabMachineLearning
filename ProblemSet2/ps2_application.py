@@ -32,4 +32,5 @@ def gaussians_2():
 
 def lab_data():
 	data = np.load('./data/lab_data.npz')
-	print("data",data)
+	X = data["X"]
+	Y = data["Y"] # if data is outlier -1 inlier +1
