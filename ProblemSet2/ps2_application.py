@@ -15,8 +15,11 @@ def usps():
 
 def gaussians_5():
 	#gaussians5 = np.loadtxt("._5_gaussians.npy", delimiter=',')
-	gaussians5 = np.load('._5_gaussians.npy',allow_pickle=True)
-	print("data", gaussians5)
+	gaussians_5 = np.load('./data/5_gaussians.npy',allow_pickle=True)
+	#print(gaussians_5,gaussians_5.shape)
+	for k in range(2,8,1):
+		print("k = ",k)
+		imp.kmeans(gaussians_5.T,k)
 	return 0
 #assignment 8
 def gaussians_2():
