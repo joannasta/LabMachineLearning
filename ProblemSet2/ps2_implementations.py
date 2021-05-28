@@ -1,6 +1,9 @@
 """ ps2_implementation.py
+
 PUT YOUR NAME HERE:
 <FIRST_NAME><LAST_NAME>
+
+
 Write the functions
 - kmeans
 - kmeans_agglo
@@ -8,6 +11,7 @@ Write the functions
 - norm_pdf
 - em_gmm
 - plot_gmm_solution
+
 (c) Felix Brockherde, TU Berlin, 2013
     Translated to Python from Paul Buenau's Matlab scripts
 """
@@ -25,7 +29,7 @@ def kmeans(X,k,max_iter=100):
     """ Input: X: (d x n) data matrix with each datapoint in one column
                k: number of clusters
                max_iter: maximum number of iterations
-        X 9x2 , k =3 -> mu 3x2 -> r 9
+        X 9x2 , k =3 -> mu 3x2 -> r 9 
         Output: mu: (d x k) matrix with each cluster center in one column
                 r: assignment vector   """
     n,d= X.shape
@@ -45,7 +49,7 @@ def kmeans(X,k,max_iter=100):
             else:
                 mu[t,:] = np.mean(rng.choice(X,(k),replace=False))
             plt.scatter(X[t==r_new,0],X[t==r_new,1],label=t)
-        plt.scatter(mu[:,0],mu[:,1],c="r",label="mean")
+        plt.scatter(mu[:,0],mu[:,1],c="black",label="mean")
         plt.legend()
         plt.show()
         #print("r",r,"r_new",r_new)
@@ -63,9 +67,11 @@ def kmeans(X,k,max_iter=100):
 
 def kmeans_agglo(X, r, showSizes = False):
     """ Performs agglomerative clustering with k-means criterion
+
     Input:
     X: (d x n) data matrix with each datapoint in one column
     r: assignment vector
+
     Output:
     R: (k-1) x n matrix that contains cluster memberships before each step
     kmloss: vector with loss after each step
@@ -91,6 +97,7 @@ def kmeans_agglo(X, r, showSizes = False):
 
     #Compute the clustering steps
     for i in range (k-1):
+        #agglomerative step
 
         #Find the current clusters
         uniques = np.unique(r)
@@ -114,16 +121,15 @@ def kmeans_agglo(X, r, showSizes = False):
         max        += 1
         sizes[i]    = np.count_nonzero(r == max)
 
-    #if showSizes:
-    #    return R, kmloss, mergeidx, sizes
-    return R, kmloss, mergeidx
-
-
+    if showSizes:
+        return R, kmloss, mergeidx, sizes
 def kmeans_crit(X, r):
     """ Computes k-means criterion
-    Input:
+
+    Input: 
     X: (d x n) data matrix with each datapoint in one column
     r: assignment vector
+
     Output:
         value: scalar for sum of euclidean distances to cluster centers
     """
@@ -142,6 +148,7 @@ def kmeans_crit(X, r):
 
 def agglo_dendro(kmloss, mergeidx):
     """ Plots dendrogram for agglomerative clustering
+
     Input:
     kmloss: vector with loss after each step
     mergeidx: (k-1) x 2 matrix that contains merge idx for each step
@@ -174,14 +181,13 @@ def agglo_dendro(kmloss, mergeidx):
 
     for i in range(n):
         linkMat[i,2] = kmloss[i+1]#-kmloss[i]
-    #print(linkMat)
+    print(linkMat)
     dendrogram(linkMat)
     plt.show()
-    #return linkMat
+    return linkMat
 
 def norm_pdf(xi, mu, C):
     xi = xi[:,np.newaxis]
-    print("C",C)
     n,d = xi.shape
     xi = xi.T
     try:
@@ -198,18 +204,53 @@ def norm_pdf(xi, mu, C):
         term = np.exp((-1/2)* xm@np.linalg.solve(C,xm.T))
         yi = const*term
     return yi
+        
+def plot_gmm_solution(X, mu, sigmas):
+    k = mu.shape[0]
+    print("k",k)
+    """ Plots covariance ellipses for GMM
+    Input:
+    X: (d x n) data matrix with each datapoint in one column
+    mu: (d x k) matrix with each cluster center in one column
+    sigma: list of d x d covariance matrices
+    """
+    #print("X",X.shape)
+    #print("Xsorted",np.sort(X,axis=1))
+    #X = np.sort(X,axis=1)
+    #plt.scatter(X[:,0],X[:,1])
+    #plt.scatter(mu[:,0],mu[:,1])
 
+    #clusters = np.array_split(X, k)
+    r_new = np.zeros(X.shape[0])
+    for j in range(X.shape[0]):
+            r_new[j] = np.argmin(np.linalg.norm(X[j,:]-mu,axis=1)**2)
+    print("r_new",r_new)
+    clusters = X
+    fig, ax = plt.subplots(subplot_kw={'aspect': 'equal'})
+    for i in range(k):
+        lambdas,vectors = np.linalg.eig(sigmas[i])
+        eigenvalues, eigenvectors = lambdas, vectors
+        theta = np.linspace(0, 2*np.pi, 1000);
+        ellipsis = (((np.sqrt(eigenvalues[None,:]) * eigenvectors)) @ [np.sin(theta), np.cos(theta)]) + np.repeat([mu[i]], 1000, axis=0).T
+        plt.plot(ellipsis[0,:], ellipsis[1,:], color='black')
+        ax.scatter(clusters[i==r_new,0],clusters[i==r_new,1],label="cluster"+str(i))#plt.scatter(X[t==r_new,0],X[t==r_new,1],label=t)
+    ax.plot(mu[:,0],mu[:,1],'r+',label="em_gmm-mean")
+    plt.legend()
+    plt.show()
 
-
+    pass
+      
 
 def em_gmm(X, K, max_iter=30, init_kmeans=True, eps=1e-3):
     """ Implements EM for Gaussian Mixture Models
+
     Input:
     X: (d x n) data matrix with each datapoint in one column
     k: number of clusters
     max_iter: maximum number of iterations
     init_kmeans: whether kmeans should be used for initialisation
     eps: when log likelihood difference is smaller than eps, terminate loop
+
     Output:
     pi: 1 x k matrix of priors
     mu: (d x k) matrix with each cluster center in one column
@@ -218,18 +259,17 @@ def em_gmm(X, K, max_iter=30, init_kmeans=True, eps=1e-3):
     n = 9
     """
     n,d = X.shape
-    print("n,d",n,d)
     pi = np.array([1/K]*K)
     if init_kmeans:
         mu,r,loss = kmeans(X,K)
     else:
         rng = np.random.default_rng()
-        mu = rng.choice(X,(k),replace=False)
+        mu = rng.choice(X,(K),replace=False)
     sigma = [np.eye(d)]*K
     gamma = np.zeros((K,n))
     gamma_ = np.zeros((K,n))
     eta = np.zeros(K)
-
+    
     for _ in range(max_iter):
         print("durchgang",_)
         gamma_ = gamma
@@ -238,7 +278,7 @@ def em_gmm(X, K, max_iter=30, init_kmeans=True, eps=1e-3):
                 dividend = pi[k]* norm_pdf(X[i,:],mu[k],sigma[k])
                 divisor = sum([(pi[k_] * norm_pdf(X[i,:], mu[k_], sigma[k_])) for k_ in range(K)])
                 gamma[k,i] = dividend/divisor
-
+                
         for k in range(K):
             eta[k] = sum([gamma[k,i] for i in range(n)])
             pi[k] = eta[k]/n
@@ -246,52 +286,21 @@ def em_gmm(X, K, max_iter=30, init_kmeans=True, eps=1e-3):
             s=0
             for i in range(n):
                 tmp = (X[i] - mu[k])[:,np.newaxis]
-                print("tmp",tmp)
-                print("gamma[k,i]",gamma[k,i])
                 s += gamma[k,i] * tmp * tmp.T
             sigma[k] = 1/eta[k] * s
         if np.all(np.abs(np.array(gamma_)-np.array(gamma))<eps):
                 break
-
+        
     loglik = gamma
+    plot_gmm_solution(X, mu, sigma)
     return pi,mu,sigma,loglik
-
-
-def plot_gmm_solution(X, mu, sigma):
-    """ Plots covariance ellipses for GMM
-    Input:
-    X: (d x n) data matrix with each datapoint in one column
-    mu: (d x k) matrix with each cluster center in one column
-    sigma: list of d x d covariance matrices
-    """
-    fig, ax = plt.subplots(subplot_kw={'aspect': 'equal'})
-    lambdas,vectors = np.linalg.eig(sigma)
-    print("lambdas,vectors",lambdas,vectors)
-    for i in range(mu.shape[0]):
-        eigenvalues, eigenvectors = lambdas[i], vectors[i]
-        theta = np.linspace(0, 2*np.pi, 1000);
-        ellipsis = (((np.sqrt(eigenvalues[None,:]) * eigenvectors)) @ [np.sin(theta), np.cos(theta)]) + np.repeat([mu[i]], 1000, axis=0).T
-        plt.plot(ellipsis[0,:], ellipsis[1,:], color='blue')
-        #ellipse = Ellipse((mu[i,0],mu[i,1]), width=lambda_[i,0]*i*2, height=lambda_[i,1]*i*2
-        #                  ,angle=np.rad2deg(np.arccos(v[0, 0])))
-        #ax.add_artist(ellipse)
-        ax.set_xlim(-2.2, 2.2)
-        ax.set_ylim(-2.2, 2.2)
-        ax.scatter(X[:,0],X[:,1],label="em_gmm")
-        #print("mu[:,0]",mu[:,0],"mu[:,1]",mu[:,1],"mu",mu.shape)
-        ax.scatter(mu[:,0],mu[:,1],label="em_gmm-mean")
-
-    plt.show()
-
-    pass
-
-
+                    
+                    
 def test_crit():
     # möglicher fehler falls r mit 2 eckigen Klammern initialisiert wird
     X = np.array([[1,0,2,3,1,2,4,2,4,1],[1,0,2,3,1,2,4,2,4,1]])
     r = np.array([1,0,2,3,1,2,4,2,4,1])
     return(kmeans_agglo(X,r))
-
 def test_kmeans():
     # möglicher fehler falls r mit 2 eckigen Klammern initialisiert wird
     #X = np.array([[0,0,1,1,2,2,3,3,4,4,5,5],[0,0,1,1,2,2,3,3,4,4,5,5]])
@@ -322,7 +331,6 @@ def test_kmeans():
         raise AssertionError('test_kmeans cluster assignments are wrong.')
     if not worked2:
         raise AssertionError('test_kmeans did not find the correct cluster center.')
-
 def test_Agglo():
     X = np.array([[0,1,2,3,4,5,6,7,8,9],[0,1,2,3,4,5,6,7,8,9]])
     r = X[0]
@@ -355,7 +363,6 @@ def kmeans_usps_test ():
     P=mat.get("data_patterns")
     kmeans(P,10)
     pass
-
 def test_em_gmm():
     X = np.array([[0., 1., 1., 10., 10.25, 11., 10., 10.25, 11.],
                   [0., 0., 1.,  0.,   0.5,  0.,  5.,   5.5,  5.]]).T
