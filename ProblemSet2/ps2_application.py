@@ -9,7 +9,8 @@ def usps():
     #1) Load the USPS dataset
     L=mat.get("data_labels")
     P=mat.get("data_patterns")
-    imp.kmeans(P,10)
+    #imp.kmeans(P,10)
+    imp.em_gmm(P, 10, max_iter=100, init_kmeans=False, eps=1e-3)
     return 0
 #assignment 7
 
@@ -19,17 +20,19 @@ def gaussians_5():
 	#print(gaussians_5,gaussians_5.shape)
 	for k in range(2,8,1):
 		print("k = ",k)
-		imp.kmeans(gaussians_5.T,k)
+		#imp.kmeans(gaussians_5.T,k)
+		imp.em_gmm(gaussians_5.T, k, max_iter=100, init_kmeans=False, eps=1e-3)
 	return 0
 #assignment 8
 def gaussians_2():
 	#gaussians2 = np.loadtxt("._2_gaussians.npy", delimiter=',')
 	data = np.load('2_gaussians.npy',allow_pickle=True)
 	print("data", data.shape)
-	#for k in range(2,8,1):
-	#	print("k = ",k)
+	for k in range(2,8,1):
+		print("k = ",k)
 	#	imp.kmeans(data.T,k)
-	imp.kmeans(data.T,7)
+	#imp.kmeans(data.T,7)
+		imp.em_gmm(data.T, k, max_iter=100, init_kmeans=False, eps=1e-3)
 	return 0
 #assignment10
 
