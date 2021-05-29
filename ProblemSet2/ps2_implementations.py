@@ -1,9 +1,6 @@
 """ ps2_implementation.py
-
 PUT YOUR NAME HERE:
 <FIRST_NAME><LAST_NAME>
-
-
 Write the functions
 - kmeans
 - kmeans_agglo
@@ -11,7 +8,6 @@ Write the functions
 - norm_pdf
 - em_gmm
 - plot_gmm_solution
-
 (c) Felix Brockherde, TU Berlin, 2013
     Translated to Python from Paul Buenau's Matlab scripts
 """
@@ -29,7 +25,7 @@ def kmeans(X,k,max_iter=100):
     """ Input: X: (d x n) data matrix with each datapoint in one column
                k: number of clusters
                max_iter: maximum number of iterations
-        X 9x2 , k =3 -> mu 3x2 -> r 9 
+        X 9x2 , k =3 -> mu 3x2 -> r 9
         Output: mu: (d x k) matrix with each cluster center in one column
                 r: assignment vector   """
     n,d= X.shape
@@ -67,11 +63,9 @@ def kmeans(X,k,max_iter=100):
 
 def kmeans_agglo(X, r, showSizes = False):
     """ Performs agglomerative clustering with k-means criterion
-
     Input:
     X: (d x n) data matrix with each datapoint in one column
     r: assignment vector
-
     Output:
     R: (k-1) x n matrix that contains cluster memberships before each step
     kmloss: vector with loss after each step
@@ -123,13 +117,13 @@ def kmeans_agglo(X, r, showSizes = False):
 
     if showSizes:
         return R, kmloss, mergeidx, sizes
+    return R, kmloss, mergeidx
+
 def kmeans_crit(X, r):
     """ Computes k-means criterion
-
-    Input: 
+    Input:
     X: (d x n) data matrix with each datapoint in one column
     r: assignment vector
-
     Output:
         value: scalar for sum of euclidean distances to cluster centers
     """
@@ -148,7 +142,6 @@ def kmeans_crit(X, r):
 
 def agglo_dendro(kmloss, mergeidx):
     """ Plots dendrogram for agglomerative clustering
-
     Input:
     kmloss: vector with loss after each step
     mergeidx: (k-1) x 2 matrix that contains merge idx for each step
@@ -204,7 +197,7 @@ def norm_pdf(xi, mu, C):
         term = np.exp((-1/2)* xm@np.linalg.solve(C,xm.T))
         yi = const*term
     return yi
-        
+
 def plot_gmm_solution(X, mu, sigmas):
     k = mu.shape[0]
     print("k",k)
@@ -239,18 +232,16 @@ def plot_gmm_solution(X, mu, sigmas):
     plt.show()
 
     pass
-      
+
 
 def em_gmm(X, K, max_iter=30, init_kmeans=True, eps=1e-3):
     """ Implements EM for Gaussian Mixture Models
-
     Input:
     X: (d x n) data matrix with each datapoint in one column
     k: number of clusters
     max_iter: maximum number of iterations
     init_kmeans: whether kmeans should be used for initialisation
     eps: when log likelihood difference is smaller than eps, terminate loop
-
     Output:
     pi: 1 x k matrix of priors
     mu: (d x k) matrix with each cluster center in one column
@@ -269,7 +260,7 @@ def em_gmm(X, K, max_iter=30, init_kmeans=True, eps=1e-3):
     gamma = np.zeros((K,n))
     gamma_ = np.zeros((K,n))
     eta = np.zeros(K)
-    
+
     for _ in range(max_iter):
         print("durchgang",_)
         gamma_ = gamma
@@ -278,7 +269,7 @@ def em_gmm(X, K, max_iter=30, init_kmeans=True, eps=1e-3):
                 dividend = pi[k]* norm_pdf(X[i,:],mu[k],sigma[k])
                 divisor = sum([(pi[k_] * norm_pdf(X[i,:], mu[k_], sigma[k_])) for k_ in range(K)])
                 gamma[k,i] = dividend/divisor
-                
+
         for k in range(K):
             eta[k] = sum([gamma[k,i] for i in range(n)])
             pi[k] = eta[k]/n
@@ -290,12 +281,12 @@ def em_gmm(X, K, max_iter=30, init_kmeans=True, eps=1e-3):
             sigma[k] = 1/eta[k] * s
         if np.all(np.abs(np.array(gamma_)-np.array(gamma))<eps):
                 break
-        
+
     loglik = gamma
     plot_gmm_solution(X, mu, sigma)
     return pi,mu,sigma,loglik
-                    
-                    
+
+
 def test_crit():
     # möglicher fehler falls r mit 2 eckigen Klammern initialisiert wird
     X = np.array([[1,0,2,3,1,2,4,2,4,1],[1,0,2,3,1,2,4,2,4,1]])
