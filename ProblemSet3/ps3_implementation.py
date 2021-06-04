@@ -1,7 +1,8 @@
 """ ps3_implementation.py
 
 PUT YOUR NAME HERE:
-<FIRST_NAME><LAST_NAME>
+Joanna Stamer
+Friedrich Wicke
 
 
 Write the functions
@@ -18,7 +19,7 @@ import scipy.linalg as la
 import itertools as it
 import time
 import pylab as pl
-from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d impor
 
 
 def zero_one_loss(y_true, y_pred):
@@ -27,12 +28,41 @@ def zero_one_loss(y_true, y_pred):
 
 
 def mean_absolute_error(y_true, y_pred):
-    ''' your code here '''
+    return (1/y_true.shape[0])*np.sum(np.abs(y_pred-y_true))
 
 
 def cv(X, y, method, params, loss_function=zero_one_loss, nfolds=10, nrepetitions=5):
     ''' your header here!
     '''
+    #initialize the average error
+    avErr = 0
+
+    for repetition in range(nrepetitions):
+
+        'Calculate the size of the partitions
+        DL = np.concatenate((X,[y]), axis=0).T
+        shuffledDL = np.random.shuffle(DL)
+        partitions = np.array_split(shuffledDL, nfolds, axis=0)
+
+        for fold in range(nfolds):
+
+            #Create TestSet and TrainingSet
+            testSet = partitions[fold]
+            trainingSet = np.vstack(np.delete(partitions, fold))
+
+            #Train and Predict the Data
+            Training = method()
+            Training.fit(trainingSet[:,:-1],trainingSet[:,-1])
+            y_pred = Training.predict(testSet[:,:-1])
+
+            #Compare the true and predicted labels and calculat the error
+            y_true = testSet[:,-1]
+            avErr += np.count_nonzero(y_true != y_pred) / y_true.size
+
+    avErr = (1/(nfolds * nrepetitions))*avErr
+
+    return avErr
+
     return method
 
   
@@ -53,6 +83,12 @@ class krr():
             self.kernelparameter = kernelparameter
         if regularization is not False:
             self.regularization = regularization
+
+        #Calculate the Regularization term C
+
+        #Use Cross-Validation to find the Kernel Parameters
+
+        #Perform the kernel ridge regression
 
         return self
 
