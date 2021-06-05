@@ -36,6 +36,24 @@ def cv(X, y, method, params, loss_function=zero_one_loss, nfolds=10, nrepetition
     '''
     #initialize the average error
     avErr = 0
+    parDim = [len(params[x]) for x in params]
+    errList = []
+
+    for i in it.product(*params.values()):
+        errList.append(cross_validate(X, y, [*i], loss_function, nfolds, nrepetitions , False))
+    errMat = np.array(errList).reshape((parDim))
+
+    if errMat.size == 0:
+        return errMat[0]
+
+    argMins = np.argmin(errMat)
+    optParams = [thisdict[x][i[j]] for j, x in enumerate(thisdict)]
+
+    return cross_validate(X, y, optParams, loss_function, nfolds, nrepetitions , True)
+
+
+
+def cross_validate(X, y, paramList, loss_function, nfolds, nrepititions, retMet):
 
     for repetition in range(nrepetitions):
 
@@ -51,19 +69,22 @@ def cv(X, y, method, params, loss_function=zero_one_loss, nfolds=10, nrepetition
             trainingSet = np.vstack(np.delete(partitions, fold))
 
             #Train and Predict the Data
-            Training = method()
+            Training = method(paramList)
             Training.fit(trainingSet[:,:-1],trainingSet[:,-1])
             y_pred = Training.predict(testSet[:,:-1])
 
-            #Compare the true and predicted labels and calculat the error
+            #Compare the true and predicted labels and calculate the error
             y_true = testSet[:,-1]
             avErr += np.count_nonzero(y_true != y_pred) / y_true.size
 
     avErr = (1/(nfolds * nrepetitions))*avErr
 
+    if retMet:
+        return Training
+
     return avErr
 
-    return method
+
 
   
 class krr():
