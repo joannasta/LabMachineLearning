@@ -43,11 +43,11 @@ def cv(X, y, method, params, loss_function=zero_one_loss, nfolds=10, nrepetition
         errList.append(cross_validate(X, y, [*i], loss_function, nfolds, nrepetitions , False))
     errMat = np.array(errList).reshape((parDim))
 
-    if errMat.size == 0:
+    if errMat.size == 1:
         return errMat[0]
 
     argMins = np.argmin(errMat)
-    optParams = [thisdict[x][i[j]] for j, x in enumerate(thisdict)]
+    optParams = [params[x][argMins[j]] for j, x in enumerate(params)]
 
     return cross_validate(X, y, optParams, loss_function, nfolds, nrepetitions , True)
 
@@ -105,7 +105,16 @@ class krr():
         if regularization is not False:
             self.regularization = regularization
 
+        #Calculate the Kernel Matrix K
+        K = self.calcKer(X, kernel, kernelparameter)
+
         #Calculate the Regularization term C
+        if regularization == 0:
+
+            eigVals, _  = np.linalg.eig(K)
+            eigMean     = np.mean(eigVals)
+            paramList   = ...
+
 
         #Use Cross-Validation to find the Kernel Parameters
 
@@ -117,3 +126,45 @@ class krr():
         ''' your header here!
         '''
         return self
+
+
+    def ker(self, x, y, ker, kernelParameter):
+
+        # Linear Kernel
+        if ker == 'linear':
+            return x*y
+
+        # Polynomial Kernel
+        if ker == 'polynomial':
+            d = kernelParameter
+            return ((x*y)+1)**d
+
+        # Gaussian Kernel
+        if ker == 'gaussian':
+            sigma = kernelParameter
+            exponent = -(np.abs((x-y))**2)/(2*(sigma**2))
+            return np.exp(exponent)
+
+    def calcKer(self, X, kernel, kernelparameter):
+
+        # Linear Kernel
+        if kernel == 'linear':
+            return X@X.T
+
+        # Polynomial Kernel
+        if kernel == 'polynomial':
+            d = kernelparameter
+            one = np.ones(X.shape)
+            return np.linalg.matrix_power((X@X.T+one),d)
+
+        # Gaussian Kernel
+        if kernel == 'gaussian':
+            sigma = kernelparameter
+            G           = A@A.T
+            g           = np.diag(G)
+            one         = np.ones((g.shape[0]))
+            distances   = np.outer(g,one) + np.outer(one,g) - 2*G
+            params      = (-1/(sigma**2))*distances
+            return np.exp(params)
+
+
