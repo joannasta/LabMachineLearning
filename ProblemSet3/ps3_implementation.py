@@ -14,7 +14,7 @@ Write your implementations in the given functions stubs!
 
 (c) Daniel Bartz, TU Berlin, 2013
 """
-import numpy
+
 import numpy as np
 import scipy.linalg as la
 import itertools as it
@@ -41,56 +41,71 @@ def cv(X, y, method, params, loss_function = mean_absolute_error, nfolds=10, nre
     errList = []
 
     for i in it.product(*params.values()):
-        errList.append(cross_validate(X, y, [*i], loss_function, nfolds, nrepetitions , False))
+        errList.append(cross_validate(X, y, method,[*i], loss_function, nfolds,  nrepetitions ))
     errMat = np.array(errList).reshape((parDim))
 
     if errMat.size == 1:
         return errMat[0]
 
     argMins     = np.argmin(errMat)
-    optParams   = [params[x][argMins[j]] for j, x in enumerate(params)]
+    optParams =[]
+    for key in params:
+        if key == "kernel":
+            optParams.append(params[key][0])
+        else:
+            optParams.append(params[key])
+    #optParams   = [params[x][argMins[j]] for j, x in enumerate(params)]
 
-    return cross_validate(X, y, optParams, loss_function, nfolds, nrepetitions , True)
+    return cross_validate(X, y, method,optParams, loss_function, nfolds,  nrepetitions )
 
 
 
-def cross_validate(X, y, paramList, loss_function, nfolds, nrepititions, retMet):
+def cross_validate(X, y, method,paramList, loss_function, nfolds,  nrepetitions):
 
-    for repetition in range(nrepititions):
+    for repetition in range( nrepetitions):
 
         #Calculate the size of the partitions
         DL          = np.vstack((X,y[:,np.newaxis])).T
         np.random.shuffle(DL)
         partitions  = np.array_split(DL, nfolds, axis=0)
+        partitions = np.vstack(partitions)
+        tempErr = 0
+        avErr =0
 
         for fold in range(nfolds):
 
             #Create TestSet and TrainingSet
-            testSet     = partitions[fold]
+            partitions = np.array(partitions)
+            testSet     = partitions.T[fold]
+
             trainingSet = np.vstack(np.delete(partitions, fold))
 
+            trainingSet = trainingSet.T
             #Train and Predict the Data
             Training = method(paramList)
+
             Training.fit(trainingSet[:,:-1],trainingSet[:,-1])
-            y_pred = Training.predict(testSet[:,:-1])
+            testSet = testSet.T
+            y_pred = Training.predict(testSet)#[:-2])
 
             #Compare the true and predicted labels and calculate the error
-            y_true          = testSet[:,-1]
+            y_true          = testSet#[:-2]
             tempErr         += np.count_nonzero(y_true != y_pred) / y_true.size
             avErr           += tempErr
             Training.cvloss = tempErr
 
-    avErr = (1/(nfolds * nrepetitions))*avErr
+    avErr = (1/(nfolds *  nrepetitions))#*avErr
 
-    if retMet:
-        return Training
 
     return avErr
 
 
 
   
-class krr():
+
+
+
+class krr2():
     ''' your header here!
     '''
     def __init__(self, kernel='linear', kernelparameter=1, regularization=0):
@@ -126,6 +141,7 @@ class krr():
             paramList   = np.logspace(-3, 4, num = 10, base = eigMean)
 
             #iterate over the list, find the lowest error and save the C value
+
             U       = eigVecs
             UT      = np.linalg.inv(U)
             L       = eigVals
@@ -164,30 +180,44 @@ class krr():
 
     def predict(self, Y):
 
-        predictions = np.zeros(Y.shape[1])
-
+        predictions = np.zeros(Y.shape[0])
         for i, data in enumerate(Y):
             for j in range(self.alpha.shape[0]):
-                predictions[i] += self.alpha[j] + self.ker(data, self.X[j], self.kernel, self.kernelparameter)
+                print("data",data)
+                print("self.X",self.X.shape)
+                print("self.X[j]",self.X[j].shape)
+                X = self.X.T
+                ker = self.ker(data, X[j], self.kernel, self.kernelparameter)[0]
+                predictions[i] += self.alpha[j] +ker
 
         return predictions
 
 
     def ker(self, x, y, ker, kernelParameter):
-
+        #print("x",x.shape,"y",y.shape,"ker",ker,"kernelP",kernelParameter)
+        if len(ker)>1:
+            kern = ker[0]
+            sigma = ker[1]
+            d = ker[2]
+        else:
+            kern = ker
+            sigma = kernelParameter#ker[1]
+            d = kernelParameter#ker[2]
         # Linear Kernel
-        if ker == 'linear':
+        if kern == 'linear':
             return x*y
 
         # Polynomial Kernel
-        if ker == 'polynomial':
-            d = kernelParameter
+        if kern == 'polynomial':
+            
             return ((x*y)+1)**d
 
         # Gaussian Kernel
-        if ker == 'gaussian':
-            sigma = kernelParameter
+        if kern == 'gaussian':
+            
+            #print("sigma",sigma)
             exponent = -(np.abs((x-y))**2)/(2*(sigma**2))
+            #print("exponent",exponent)
             return np.exp(exponent)
 
     def calcKer(self, X, kernel, kernelparameter):
