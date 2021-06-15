@@ -20,7 +20,9 @@ import scipy.linalg as la
 import itertools as it
 import time
 import pylab as pl
-#from mpl_toolkits.mplot3d import
+
+
+# from mpl_toolkits.mplot3d import
 
 
 def zero_one_loss(y_true, y_pred):
@@ -29,92 +31,91 @@ def zero_one_loss(y_true, y_pred):
 
 
 def mean_absolute_error(y_true, y_pred):
-    return (1/y_true.shape[0])*np.sum(np.abs(y_pred-y_true))
+    return (1 / y_true.shape[0]) * np.sum(np.abs(y_pred - y_true))
 
 
-def cv(X, y, method, params, loss_function = mean_absolute_error, nfolds=10, nrepetitions=5):
+def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepetitions=5):
     ''' your header here!
     '''
-    #initialize the average error
+    # initialize the average error
     avErr = 0
     parDim = [len(params[x]) for x in params]
     errList = []
 
     for i in it.product(*params.values()):
-        errList.append(cross_validate(X, y, method,[*i], loss_function, nfolds,  nrepetitions ))
+        errList.append(cross_validate(X, y, method, [*i], loss_function, nfolds, nrepetitions).cvloss)
     errMat = np.array(errList).reshape((parDim))
 
     if errMat.size == 1:
         return errMat[0]
 
-    argMins     = np.argmin(errMat)
-    optParams =[]
+    argMins = np.argmin(errMat)
+
+    optParams = []
     for key in params:
         if key == "kernel":
             optParams.append(params[key][0])
         else:
             optParams.append(params[key])
-    #optParams   = [params[x][argMins[j]] for j, x in enumerate(params)]
+    # optParams   = [params[x][argMins[j]] for j, x in enumerate(params)]
 
-    return cross_validate(X, y, method,optParams, loss_function, nfolds,  nrepetitions )
+    return cross_validate(X, y, method, optParams, loss_function, nfolds, nrepetitions)
 
 
+def cross_validate(X, y, method, paramList, loss_function, nfolds, nrepetitions):
 
-def cross_validate(X, y, method,paramList, loss_function, nfolds,  nrepetitions):
-
-    for repetition in range( nrepetitions):
-
-        #Calculate the size of the partitions
-        DL          = np.vstack((X,y[:,np.newaxis])).T
+    for repetition in range(nrepetitions):
+        # Calculate the size of the partitions
+        DL = np.array((X.flatten(), y)).T
+        #print(DL.shape, "ID9")
         np.random.shuffle(DL)
-        partitions  = np.array_split(DL, nfolds, axis=0)
-        partitions = np.vstack(partitions)
+        partitions = np.array(np.array_split(DL, nfolds, axis=0))
+
+
         tempErr = 0
-        avErr =0
+        avErr = 0
 
         for fold in range(nfolds):
 
-            #Create TestSet and TrainingSet
-            partitions = np.array(partitions)
-            testSet     = partitions.T[fold]
+            # Create TestSet and TrainingSet
+            testSet = partitions[fold]
 
-            trainingSet = np.vstack(np.delete(partitions, fold))
+            a = np.arange(nfolds)
+            a = a[[a != fold]]
+            trainingSet = np.array(partitions[a])
+            trainingSet = trainingSet.reshape(trainingSet.shape[0]*trainingSet.shape[1], trainingSet.shape[2])
 
-            trainingSet = trainingSet.T
-            #Train and Predict the Data
+
+            # Train and Predict the Data
             Training = method(paramList)
 
-            Training.fit(trainingSet[:,:-1],trainingSet[:,-1])
+            #print(trainingSet[:,0].shape, trainingSet[:,1].shape, "ID20")
+            Training.fit(trainingSet[:,0][:,np.newaxis], trainingSet[:,1])
             testSet = testSet.T
-            y_pred = Training.predict(testSet)#[:-2])
+            y_pred = Training.predict(testSet)  # [:-2])
 
-            #Compare the true and predicted labels and calculate the error
-            y_true          = testSet#[:-2]
-            tempErr         += np.count_nonzero(y_true != y_pred) / y_true.size
-            avErr           += tempErr
+            # Compare the true and predicted labels and calculate the error
+            y_true = testSet  # [:-2]
+            tempErr += np.count_nonzero(y_true != y_pred) / y_true.size
+            avErr += tempErr
             Training.cvloss = tempErr
 
-    avErr = (1/(nfolds *  nrepetitions))#*avErr
+    avErr = (1 / (nfolds * nrepetitions))  # *avErr
+
+    return Training
 
 
-    return avErr
-
-
-
-  
-
-
-
-class krr2():
+class krr():
     ''' your header here!
     '''
+
     def __init__(self, kernel='linear', kernelparameter=1, regularization=0):
-        self.kernel             = kernel
-        self.kernelparameter    = kernelparameter
-        self.regularization     = regularization
-        self.alpha              = 0
-        self.K                  = 0
-        self.X                  = 0
+        self.kernel = kernel
+        self.kernelparameter = kernelparameter
+        self.regularization = regularization
+        self.alpha = 0
+        self.K = 0
+        self.X = 0
 
     def fit(self, X, y, kernel=False, kernelparameter=False, regularization=False):
 
@@ -127,96 +128,104 @@ class krr2():
         if regularization is not False:
             self.regularization = regularization
 
-        #Calculate the Kernel Matrix K
+        # Calculate the Kernel Matrix K
         self.K = self.calcKer(X, kernel, kernelparameter)
 
-        #Calculate the Regularization term C
+        # Calculate the Regularization term C
         if regularization == 0:
+            # Calculate the mean of the Eigenvalues as the center of candidates
+            eigVals, eigVecs = np.linalg.eig(self.K)
+            eigMean = np.mean(eigVals)
 
-            #Calculate the mean of the Eigenvalues as the center of candidates
-            eigVals, eigVecs  = np.linalg.eig(self.K)
-            eigMean     = np.mean(eigVals)
+            # Create a List of candidates
+            paramList = np.logspace(-3, 4, num=10, base=eigMean)
 
-            #Create a List of candidates
-            paramList   = np.logspace(-3, 4, num = 10, base = eigMean)
+            # iterate over the list, find the lowest error and save the C value
 
-            #iterate over the list, find the lowest error and save the C value
+            U = eigVecs
+            UT = np.linalg.inv(U)
+            L = eigVals
+            UTY = UT @ y
+            errors = [self.regError(C, U, UT, L, y, UTY) for C in paramList]
 
-            U       = eigVecs
-            UT      = np.linalg.inv(U)
-            L       = eigVals
-            UTY     = UT@y
-            errors  = [self.regError(C, U, UT, L, y, UTY) for C in paramList]
-
-            #set the reg param of the object
+            # set the reg param of the object
             self.regularization = paramList[np.argmin(errors)]
 
-            #set the weight vector of the object
-            self.alpha          = np.linalg.inv(self.K+self.regularization*np.eye(self.K.shape[0]))@y
+            # set the weight vector of the object
+            self.alpha = np.linalg.inv(self.K + self.regularization * np.eye(self.K.shape[0])) @ y
 
-        #Use Cross-Validation to find the Kernel Parameters
+        # Use Cross-Validation to find the Kernel Parameters
 
-        #Perform the kernel ridge regression
+        # Perform the kernel ridge regression
 
         return self
 
     def regError(self, C, U, UT, L, y, UTY):
 
-        #Calculate the "constants"
-        n       = y.shape[0]
-        Linv    = np.diag([1/(C+x) for x in L])
-        ULLinv  = U@np.diag(L)@Linv
-        S       = ULLinv@UT
-        Sy      = ULLinv@UTY
+        # Calculate the "constants"
+        n = y.shape[0]
+        Linv = np.diag([1 / (C + x) for x in L])
+        ULLinv = U @ np.diag(L) @ Linv
+        S = ULLinv @ UT
+        Sy = ULLinv @ UTY
 
-        #Calculat the error
+        # Calculat the error
         eps = 0
         for i in range(n):
-            eps += ((y[i]-Sy[i])/(1-S[i,i]))**2
-        eps = eps/n
+            eps += ((y[i] - Sy[i]) / (1 - S[i, i])) ** 2
+        eps = eps / n
 
         return eps
 
-
     def predict(self, Y):
 
+        print(self.X.shape, Y.shape, "ID26")
         predictions = np.zeros(Y.shape[0])
         for i, data in enumerate(Y):
             for j in range(self.alpha.shape[0]):
-                print("data",data)
-                print("self.X",self.X.shape)
-                print("self.X[j]",self.X[j].shape)
-                X = self.X.T
+                #print("data", data)
+                #print("self.X", self.X.shape)
+                #print("self.X[j]", self.X[j].shape)
+                X = self.X
+                #print("DATA",data, "XJ","XSHAPE", X.shape, "j", j, "kernel", self.kernel, "param", self.kernelparameter)
+                #print("FUNCTION CALL", self.ker(data, X[j], self.kernel, self.kernelparameter))
                 ker = self.ker(data, X[j], self.kernel, self.kernelparameter)[0]
-                predictions[i] += self.alpha[j] +ker
+                predictions[i] += self.alpha[j] + ker
 
         return predictions
 
-
     def ker(self, x, y, ker, kernelParameter):
-        #print("x",x.shape,"y",y.shape,"ker",ker,"kernelP",kernelParameter)
-        if len(ker)>1:
+        #print(x.shape, y.shape, "ID25")
+        #print(ker)
+        #print(x,y,"---XY---")
+
+        # print("x",x.shape,"y",y.shape,"ker",ker,"kernelP",kernelParameter)
+        #print("KER",ker)
+        if  isinstance(ker, list):
             kern = ker[0]
             sigma = ker[1]
             d = ker[2]
         else:
             kern = ker
-            sigma = kernelParameter#ker[1]
-            d = kernelParameter#ker[2]
+            sigma = kernelParameter  # ker[1]
+            d = kernelParameter  # ker[2]
+
+        #
+        #print("Kern, Sigma, d" , kern, sigma, d, "-------")
+
         # Linear Kernel
         if kern == 'linear':
-            return x*y
+            return x * y
 
         # Polynomial Kernel
         if kern == 'polynomial':
-            
-            return ((x*y)+1)**d
+            return ((x * y) + 1) ** d
 
         # Gaussian Kernel
         if kern == 'gaussian':
-            
-            #print("sigma",sigma)
-            exponent = -(np.abs((x-y))**2)/(2*(sigma**2))
+
+            #print("XYsigma",type(x),y.shape,sigma)
+            exponent = -(np.abs((x - y)) ** 2) / (2 * (sigma ** 2))
             #print("exponent",exponent)
             return np.exp(exponent)
 
@@ -224,28 +233,24 @@ class krr2():
 
         # Linear Kernel
         if kernel == 'linear':
-            return X@X.T
+            return X @ X.T
 
         # Polynomial Kernel
         if kernel == 'polynomial':
             d = kernelparameter
             one = np.ones(X.shape)
-            return np.linalg.matrix_power((X@X.T+one),d)
+            return np.linalg.matrix_power((X @ X.T + one), d)
 
         # Gaussian Kernel
         if kernel == 'gaussian':
             sigma = kernelparameter
-            G           = A@A.T
-            g           = np.diag(G)
-            one         = np.ones((g.shape[0]))
-            distances   = np.outer(g,one) + np.outer(one,g) - 2*G
-            params      = (-1/(sigma**2))*distances
+            G = A @ A.T
+            g = np.diag(G)
+            one = np.ones((g.shape[0]))
+            distances = np.outer(g, one) + np.outer(one, g) - 2 * G
+            params = (-1 / (sigma ** 2)) * distances
             return np.exp(params)
 
-        #"Catch" the wrong specifications
-        return X@X.T
-
-
-
-
+        # "Catch" the wrong specifications
+        return X @ X.T
 
