@@ -43,13 +43,34 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
     errList = []
     metList = []
 
-    #Shufflen und die Repititions hier erstellen und an cross_validate übergeben...
-    for i in it.product(*params.values()):
-        met = cross_validate(X, y, method, [*i], loss_function, nfolds, nrepetitions)
-        errList.append(met.cvloss)
-        metList.append(met)
+    for repetition in range(nrepetitions):
 
+        # partition the data
+        XandY = np.array([*X.T, y]).T
+        np.random.shuffle(XandY)
+        partitions = np.array(np.array_split(XandY, nfolds, axis=0))
 
+        for fold in range(nfolds):
+
+            # Create TestSet and TrainingSet
+            testSet = partitions[fold]
+
+            # Create the training set
+            a = np.arange(nfolds)
+            a = a[a != fold]
+            trainingSet = np.array(partitions[a])
+            trainingSet = trainingSet.reshape(trainingSet.shape[0] * trainingSet.shape[1], trainingSet.shape[2])
+
+            #Shufflen und die Repititions hier erstellen und an cross_validate übergeben...
+            for count, i in enumerate(it.product(*params.values())):
+
+                if count == 0:
+                    met = cross_validate(X, y, method, [*i], loss_function, nfolds, nrepetitions, trainingSet, testSet)
+                    metList.append(met)
+                    errList.append(met.cvloss)
+                else:
+                    met = cross_validate(X, y, method, [*i], loss_function, nfolds, nrepetitions, trainingSet, testSet)
+                    errList[count] += met.cvloss
 
     if len(errList) == 1:
         return errList[0]
@@ -60,48 +81,23 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
 #Shufflen und repetion in CV, für alle Settings die gleichen Folds
 
 
-def cross_validate(X, y, method, paramList, loss_function, nfolds, nrepetitions):
+def cross_validate(X, y, method, paramList, loss_function, nfolds, nrepetitions, trainingSet, testSet):
 
-    #Initialize the average error
-    avErr = 0
+    # Train and Predict the Data
+    Training = method(paramList)
 
-    for repetition in range(nrepetitions):
+    Training.fit(trainingSet[:, :-1], trainingSet[:, -1])
 
-        # Calculate the size of the partitions
-        #Funktioniert das auch bei höheren Dimensionen der Daten?
-        XandY = Z = np.array([*X.T,y]).T
-        np.random.shuffle(XandY)
-        partitions = np.array(np.array_split(XandY, nfolds, axis=0))
+    y_pred = Training.predict(testSet)
 
-        tempErr = 0
+    # Compare the true and predicted labels and calculate the error
+    y_true = testSet[:,-1]  # [:-2]
 
-        for fold in range(nfolds):
+    #Use the specified loss function from the parameters
+    tempErr = loss_function(y_true, y_pred)
+    #tempErr = np.count_nonzero(y_true != y_pred) / y_true.size
 
-            # Create TestSet and TrainingSet
-            testSet = partitions[fold]
-
-            #Create the training set
-            a = np.arange(nfolds)
-            a = a[a != fold]
-            trainingSet = np.array(partitions[a])
-            trainingSet = trainingSet.reshape(trainingSet.shape[0]*trainingSet.shape[1], trainingSet.shape[2])
-
-            # Train and Predict the Data
-            Training = method(paramList)
-
-            Training.fit(trainingSet[:, :-1], trainingSet[:, -1])
-            #testSet = testSet.T
-            y_pred = Training.predict(testSet)
-
-            # Compare the true and predicted labels and calculate the error
-            y_true = testSet[:,-1]  # [:-2]
-
-            #Use the specified loss function from the parameters
-            tempErr += np.count_nonzero(y_true != y_pred) / y_true.size
-            avErr += tempErr
-
-    avErr = (1 / (nfolds * nrepetitions)) * avErr #SCOPE OF AVERR!
-    Training.cvloss = avErr
+    Training.cvloss = tempErr
 
     return Training
 
@@ -166,7 +162,7 @@ class krr():
         S = ULLinv @ UT
         Sy = ULLinv @ UTY
 
-        # Calculat the error
+        # Calculate the error
         eps = 0
         for i in range(n):
             eps += ((y[i] - Sy[i]) / (1 - S[i, i])) ** 2
@@ -177,13 +173,13 @@ class krr():
 
     def predict(self, Y):
 
-        predictions = np.zeros(Y.shape[0])
+        #Wir brauchen neue calcKer Funktion für Kernel aus X und Y mit X!=Y
+        """
+        KerMat = self.calcKer(self.X, Y, self.kernel, self.kernelparameter)
+        return A.T@self.alpha
+        """
 
-        #Man kann beide Loops vermeiden:
-        #berechne die kernel matrix zwischen trainings und testdaten
-        #-> nxm Matrix für n Trainings und m Testdaten
-        # alpha ist m dimensionales array
-        #-> dot product zw alpha und A (A.T@alpha)
+        predictions = np.zeros(Y.shape[0])
 
         #iterate over the data points
         for i, data in enumerate(Y):
@@ -197,12 +193,7 @@ class krr():
         return predictions
 
     def ker(self, x, y, ker, kernelParameter):
-        #print(x.shape, y.shape, "ID25")
-        #print(ker)
-        #print(x,y,"---XY---")
 
-        # print("x",x.shape,"y",y.shape,"ker",ker,"kernelP",kernelParameter)
-        #print("KER",ker)
         if  isinstance(ker, list):
             kern = ker[0]
             sigma = ker[1]
@@ -211,9 +202,6 @@ class krr():
             kern = ker
             sigma = kernelParameter  # ker[1]
             d = kernelParameter  # ker[2]
-
-        #
-        #print("Kern, Sigma, d" , kern, sigma, d, "-------")
 
         # Linear Kernel
         if kern == 'linear':
@@ -227,7 +215,6 @@ class krr():
         if kern == 'gaussian':
 
             exponent = - (np.abs((x - y)) ** 2) / (2 * (sigma ** 2))
-            #print("exponent",exponent)
             return np.exp(exponent)
 
     def calcKer(self, X, kernel, kernelparameter):
@@ -248,7 +235,6 @@ class krr():
         if kernel == 'gaussian':
 
             sigma = kernelparameter
-            #G = A @ A.T
             G = X @ X.T
             g = np.diag(G)
             one = np.ones((g.shape[0]))
@@ -258,13 +244,3 @@ class krr():
 
         # "Catch" the wrong specifications
         return X @ X.T
-
-
-def centerX(self):
-    av = np.zerpos(self.X.shape[0])
-    for vec in self.X:
-        av += vec
-    av = (1 / X.shape[0]) * av
-    self.X = X - av
-
-
