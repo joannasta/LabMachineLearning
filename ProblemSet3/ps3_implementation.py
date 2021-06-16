@@ -43,9 +43,11 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
     errList = []
     metList = []
 
+    #Shufflen und die Repititions hier erstellen und an cross_validate übergeben...
     for i in it.product(*params.values()):
-        errList.append(cross_validate(X, y, method, [*i], loss_function, nfolds, nrepetitions).cvloss)
-        metList.append(cross_validate(X, y, method, [*i], loss_function, nfolds, nrepetitions))
+        met = cross_validate(X, y, method, [*i], loss_function, nfolds, nrepetitions)
+        errList.append(met.cvloss)
+        metList.append(met)
 
 
 
@@ -55,48 +57,51 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
     argmin = np.argmin(errList)
     return metList[argmin]
 
+#Shufflen und repetion in CV, für alle Settings die gleichen Folds
 
 
 def cross_validate(X, y, method, paramList, loss_function, nfolds, nrepetitions):
 
-    for repetition in range(nrepetitions):
-        # Calculate the size of the partitions
-        DL = np.array((X.flatten(), y)).T
-        #print(DL.shape, "ID9")
-        np.random.shuffle(DL)
-        partitions = np.array(np.array_split(DL, nfolds, axis=0))
+    #Initialize the average error
+    avErr = 0
 
+    for repetition in range(nrepetitions):
+
+        # Calculate the size of the partitions
+        #Funktioniert das auch bei höheren Dimensionen der Daten?
+        XandY = Z = np.array([*X.T,y]).T
+        np.random.shuffle(XandY)
+        partitions = np.array(np.array_split(XandY, nfolds, axis=0))
 
         tempErr = 0
-        avErr = 0
 
         for fold in range(nfolds):
 
             # Create TestSet and TrainingSet
             testSet = partitions[fold]
 
+            #Create the training set
             a = np.arange(nfolds)
-            a = a[[a != fold]]
+            a = a[a != fold]
             trainingSet = np.array(partitions[a])
             trainingSet = trainingSet.reshape(trainingSet.shape[0]*trainingSet.shape[1], trainingSet.shape[2])
-
 
             # Train and Predict the Data
             Training = method(paramList)
 
-            #print(trainingSet[:,0].shape, trainingSet[:,1].shape, "ID20")
-            Training.fit(trainingSet[:,0][:,np.newaxis], trainingSet[:,1])
-            testSet = testSet.T
-            #print(testSet.shape, "ID29,testSetShape")
-            y_pred = Training.predict(testSet)  # [:-2])
+            Training.fit(trainingSet[:, :-1], trainingSet[:, -1])
+            #testSet = testSet.T
+            y_pred = Training.predict(testSet)
 
             # Compare the true and predicted labels and calculate the error
-            y_true = testSet  # [:-2]
+            y_true = testSet[:,-1]  # [:-2]
+
+            #Use the specified loss function from the parameters
             tempErr += np.count_nonzero(y_true != y_pred) / y_true.size
             avErr += tempErr
-            Training.cvloss = tempErr
 
-    avErr = (1 / (nfolds * nrepetitions))  # *avErr
+    avErr = (1 / (nfolds * nrepetitions)) * avErr #SCOPE OF AVERR!
+    Training.cvloss = avErr
 
     return Training
 
@@ -147,12 +152,8 @@ class krr():
             # set the reg param of the object
             self.regularization = paramList[np.argmin(errors)]
 
-            # set the weight vector of the object
-            self.alpha = np.linalg.inv(self.K + self.regularization * np.eye(self.K.shape[0])) @ y
-
-        # Use Cross-Validation to find the Kernel Parameters
-
-        # Perform the kernel ridge regression
+        # set the weight vector of the object
+        self.alpha = np.linalg.inv(self.K + self.regularization * np.eye(self.K.shape[0])) @ y
 
         return self
 
@@ -178,6 +179,12 @@ class krr():
 
         predictions = np.zeros(Y.shape[0])
 
+        #Man kann beide Loops vermeiden:
+        #berechne die kernel matrix zwischen trainings und testdaten
+        #-> nxm Matrix für n Trainings und m Testdaten
+        # alpha ist m dimensionales array
+        #-> dot product zw alpha und A (A.T@alpha)
+
         #iterate over the data points
         for i, data in enumerate(Y):
 
@@ -185,7 +192,7 @@ class krr():
             for j in range(self.alpha.shape[0]):
 
                 tempKer = self.ker(data, self.X[j], self.kernel, self.kernelparameter)[0]
-                predictions[i] += self.alpha[j] + tempKer
+                predictions[i] += self.alpha[j] * tempKer
 
         return predictions
 
@@ -227,18 +234,22 @@ class krr():
 
         # Linear Kernel
         if kernel == 'linear':
+
             return X @ X.T
 
         # Polynomial Kernel
         if kernel == 'polynomial':
+
             d = kernelparameter
             one = np.ones(X.shape)
             return np.linalg.matrix_power((X @ X.T + one), d)
 
         # Gaussian Kernel
         if kernel == 'gaussian':
+
             sigma = kernelparameter
-            G = A @ A.T
+            #G = A @ A.T
+            G = X @ X.T
             g = np.diag(G)
             one = np.ones((g.shape[0]))
             distances = np.outer(g, one) + np.outer(one, g) - 2 * G
@@ -248,5 +259,12 @@ class krr():
         # "Catch" the wrong specifications
         return X @ X.T
 
+
+def centerX(self):
+    av = np.zerpos(self.X.shape[0])
+    for vec in self.X:
+        av += vec
+    av = (1 / X.shape[0]) * av
+    self.X = X - av
 
 
