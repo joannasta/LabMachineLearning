@@ -41,25 +41,20 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
     avErr = 0
     parDim = [len(params[x]) for x in params]
     errList = []
+    metList = []
 
     for i in it.product(*params.values()):
         errList.append(cross_validate(X, y, method, [*i], loss_function, nfolds, nrepetitions).cvloss)
-    errMat = np.array(errList).reshape((parDim))
+        metList.append(cross_validate(X, y, method, [*i], loss_function, nfolds, nrepetitions))
 
-    if errMat.size == 1:
-        return errMat[0]
 
-    argMins = np.argmin(errMat)
 
-    optParams = []
-    for key in params:
-        if key == "kernel":
-            optParams.append(params[key][0])
-        else:
-            optParams.append(params[key])
-    # optParams   = [params[x][argMins[j]] for j, x in enumerate(params)]
+    if len(errList) == 1:
+        return errList[0]
 
-    return cross_validate(X, y, method, optParams, loss_function, nfolds, nrepetitions)
+    argmin = np.argmin(errList)
+    return metList[argmin]
+
 
 
 def cross_validate(X, y, method, paramList, loss_function, nfolds, nrepetitions):
@@ -92,6 +87,7 @@ def cross_validate(X, y, method, paramList, loss_function, nfolds, nrepetitions)
             #print(trainingSet[:,0].shape, trainingSet[:,1].shape, "ID20")
             Training.fit(trainingSet[:,0][:,np.newaxis], trainingSet[:,1])
             testSet = testSet.T
+            #print(testSet.shape, "ID29,testSetShape")
             y_pred = Training.predict(testSet)  # [:-2])
 
             # Compare the true and predicted labels and calculate the error
@@ -177,20 +173,19 @@ class krr():
 
         return eps
 
+
     def predict(self, Y):
 
-        print(self.X.shape, Y.shape, "ID26")
         predictions = np.zeros(Y.shape[0])
+
+        #iterate over the data points
         for i, data in enumerate(Y):
+
+            #calculate the sum
             for j in range(self.alpha.shape[0]):
-                #print("data", data)
-                #print("self.X", self.X.shape)
-                #print("self.X[j]", self.X[j].shape)
-                X = self.X
-                #print("DATA",data, "XJ","XSHAPE", X.shape, "j", j, "kernel", self.kernel, "param", self.kernelparameter)
-                #print("FUNCTION CALL", self.ker(data, X[j], self.kernel, self.kernelparameter))
-                ker = self.ker(data, X[j], self.kernel, self.kernelparameter)[0]
-                predictions[i] += self.alpha[j] + ker
+
+                tempKer = self.ker(data, self.X[j], self.kernel, self.kernelparameter)[0]
+                predictions[i] += self.alpha[j] + tempKer
 
         return predictions
 
@@ -224,8 +219,7 @@ class krr():
         # Gaussian Kernel
         if kern == 'gaussian':
 
-            #print("XYsigma",type(x),y.shape,sigma)
-            exponent = -(np.abs((x - y)) ** 2) / (2 * (sigma ** 2))
+            exponent = - (np.abs((x - y)) ** 2) / (2 * (sigma ** 2))
             #print("exponent",exponent)
             return np.exp(exponent)
 
@@ -253,4 +247,6 @@ class krr():
 
         # "Catch" the wrong specifications
         return X @ X.T
+
+
 
