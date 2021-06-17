@@ -170,6 +170,34 @@ class krr():
 
         return eps
 
+    def calcKer_new(self,Y):
+        # Linear Kernel
+        if kernel == 'linear':
+
+            return X @ Y.T
+
+        # Polynomial Kernel
+        if kernel == 'polynomial':
+            K = X @ Y.T
+
+            d = kernelparameter
+            one = np.ones(K.shape)
+            return np.linalg.matrix_power((K + one), d)
+
+        # Gaussian Kernel
+        if kernel == 'gaussian':
+
+            sigma = kernelparameter
+            G = X @ Y.T
+            g = np.diag(G)
+            one = np.ones((g.shape[0]))
+            distances = np.outer(g, one) + np.outer(one, g) - 2 * G
+            params = (-1 / (sigma ** 2)) * distances
+            return np.exp(params)
+
+        # "Catch" the wrong specifications
+        return X @ Y.T
+
 
     def predict(self, Y):
 
