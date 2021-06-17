@@ -64,7 +64,7 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
             #Shufflen und die Repititions hier erstellen und an cross_validate übergeben...
             for count, i in enumerate(it.product(*params.values())):
 
-                if count == 0:
+                if repetition == 0:
                     met = cross_validate(X, y, method, [*i], loss_function, nfolds, nrepetitions, trainingSet, testSet)
                     metList.append(met)
                     errList.append(met.cvloss)
@@ -126,16 +126,18 @@ class krr():
             self.regularization = regularization
 
         # Calculate the Kernel Matrix K
+        #Fehlerquelle
         self.K = self.calcKer(X, kernel, kernelparameter)
 
         # Calculate the Regularization term C
         if regularization == 0:
+
             # Calculate the mean of the Eigenvalues as the center of candidates
             eigVals, eigVecs = np.linalg.eig(self.K)
             eigMean = np.mean(eigVals)
 
             # Create a List of candidates
-            paramList = np.logspace(-3, 4, num=10, base=eigMean)
+            paramList = np.logspace(-2, 2, num=30, base=eigMean)
 
             # iterate over the list, find the lowest error and save the C value
 
@@ -170,41 +172,14 @@ class krr():
 
         return eps
 
-    def calcKer_new(self,Y):
-        # Linear Kernel
-        if kernel == 'linear':
-
-            return X @ Y.T
-
-        # Polynomial Kernel
-        if kernel == 'polynomial':
-            K = X @ Y.T
-
-            d = kernelparameter
-            one = np.ones(K.shape)
-            return np.linalg.matrix_power((K + one), d)
-
-        # Gaussian Kernel
-        if kernel == 'gaussian':
-
-            sigma = kernelparameter
-            G = X @ Y.T
-            g = np.diag(G)
-            one = np.ones((g.shape[0]))
-            distances = np.outer(g, one) + np.outer(one, g) - 2 * G
-            params = (-1 / (sigma ** 2)) * distances
-            return np.exp(params)
-
-        # "Catch" the wrong specifications
-        return X @ Y.T
-
 
     def predict(self, Y):
 
         #Wir brauchen neue calcKer Funktion für Kernel aus X und Y mit X!=Y
-        """
-        KerMat = self.calcKer(self.X, Y, self.kernel, self.kernelparameter)
-        return A.T@self.alpha
+
+        kerMat = self.calcXYker(self.X, Y, self.kernel, self.kernelparameter)
+        return kerMat.T@self.alpha
+
         """
 
         predictions = np.zeros(Y.shape[0])
@@ -219,6 +194,7 @@ class krr():
                 predictions[i] += self.alpha[j] * tempKer
 
         return predictions
+        """
 
     def ker(self, x, y, ker, kernelParameter):
 
@@ -264,6 +240,31 @@ class krr():
 
             sigma = kernelparameter
             G = X @ X.T
+            g = np.diag(G)
+            one = np.ones((g.shape[0]))
+            distances = np.outer(g, one) + np.outer(one, g) - 2 * G
+            params = (-1 / (sigma ** 2)) * distances
+            return np.exp(params)
+
+        # "Catch" the wrong specifications
+        return X @ X.T
+
+    def  calcXYker(self, X, Y, kernel, kernelparameter):
+
+        # Linear Kernel
+        if kernel == 'linear':
+            return X @ Y.T
+
+        # Polynomial Kernel
+        if kernel == 'polynomial':
+            d = kernelparameter
+            one = np.ones(X.shape)
+            return np.linalg.matrix_power((X @ Y.T + one), d)
+
+        # Gaussian Kernel
+        if kernel == 'gaussian':
+            sigma = kernelparameter
+            G = X @ Y.T
             g = np.diag(G)
             one = np.ones((g.shape[0]))
             distances = np.outer(g, one) + np.outer(one, g) - 2 * G
