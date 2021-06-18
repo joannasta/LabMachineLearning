@@ -33,69 +33,45 @@ def mean_absolute_error(y_true, y_pred):
 def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepetitions=5):
     ''' your header here!
     '''
-    # initialize the average error
     avErr = 0
     parDim = [len(params[x]) for x in params]
     errList = []
     metList = []
 
     for repetition in range(nrepetitions):
+        Idx = np.arange(0,X.shape[0])
+        np.random.shuffle(Idx)
+        I = np.array(np.array_split(Idx, nfolds))
+        X = X[I]      #shape = 100,1
+        y = y[I]      #shape = 100
+        for i in range(I.shape[0]):
+            Xtest = X[i]
+            ytest = y[i]
+            Xtrain = X[I!=I[i]]
+            ytrain = y[I!=I[i]]
 
-        # partition the data
-        XandY = np.array([*X.T, y]).T
-        np.random.shuffle(XandY)
-        partitions = np.array(np.array_split(XandY, nfolds, axis=0))
-
-        for fold in range(nfolds):
-
-            # Create TestSet and TrainingSet
-            testSet = partitions[fold]
-
-            # Create the training set
-            a = np.arange(nfolds)
-            a = a[a != fold]
-            trainingSet = np.array(partitions[a])
-            trainingSet = trainingSet.reshape(trainingSet.shape[0] * trainingSet.shape[1], trainingSet.shape[2])
-
-            #Shufflen und die Repititions hier erstellen und an cross_validate übergeben...
             for count, i in enumerate(it.product(*params.values())):
 
                 if repetition == 0:
-                    met = cross_validate(X, y, method, [*i], loss_function, nfolds, nrepetitions, trainingSet, testSet)
+                    met = cross_validate(method, [*i], loss_function, nfolds, nrepetitions, Xtrain ,ytrain, Xtest,ytest)
                     metList.append(met)
                     errList.append(met.cvloss)
                 else:
-                    met = cross_validate(X, y, method, [*i], loss_function, nfolds, nrepetitions, trainingSet, testSet)
+                    met = cross_validate( method, [*i], loss_function, nfolds, nrepetitions, Xtrain ,ytrain, Xtest,ytest)
                     errList[count] += met.cvloss
-
     if len(errList) == 1:
         return errList[0]
 
     argmin = np.argmin(errList)
     return metList[argmin]
 
-#Shufflen und repetion in CV, für alle Settings die gleichen Folds
-
-
-def cross_validate(X, y, method, paramList, loss_function, nfolds, nrepetitions, trainingSet, testSet):
-
-    # Train and Predict the Data
-    Training = method(paramList[0],paramList[1],paramList[2])
-
-    Training.fit(trainingSet[:, :-1], trainingSet[:, -1])
-    y_pred = Training.predict(testSet)
-
-    # Compare the true and predicted labels and calculate the error
-    y_true = testSet[:,-1]  # [:-2]
-
-
-    #Use the specified loss function from the parameters
-    tempErr = loss_function(y_true, y_pred)
-    #tempErr = np.count_nonzero(y_true != y_pred) / y_true.size
-
-    Training.cvloss = tempErr
-
-    return Training
+def cross_validate(method, paramList, loss_function, nfolds, nrepetitions, Xtrain, ytrain, Xtest, ytest):
+    training = method(paramList[0],paramList[1],paramList[2])
+    training.fit(Xtrain, ytrain)
+    ypred = training.predict(Xtest)
+    training.cvloss = loss_function(ytest, ypred)
+    return training
+  
 
 
 
