@@ -99,7 +99,7 @@ def cross_validate(X, y, method, paramList, loss_function, nfolds, nrepetitions,
 
 
 
-class krr2():
+class krr():
     ''' your header here!
     '''
 
