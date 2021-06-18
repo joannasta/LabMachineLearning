@@ -1,17 +1,13 @@
-""" ps3_implementation.py
 
+""" ps3_implementation.py
 PUT YOUR NAME HERE:
 Joanna Stamer
 Friedrich Wicke
-
-
 Write the functions
 - cv
 - zero_one_loss
 - krr
 Write your implementations in the given functions stubs!
-
-
 (c) Daniel Bartz, TU Berlin, 2013
 """
 
@@ -84,14 +80,14 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
 def cross_validate(X, y, method, paramList, loss_function, nfolds, nrepetitions, trainingSet, testSet):
 
     # Train and Predict the Data
-    Training = method(paramList)
+    Training = method(paramList[0],paramList[1],paramList[2])
 
     Training.fit(trainingSet[:, :-1], trainingSet[:, -1])
-
     y_pred = Training.predict(testSet)
 
     # Compare the true and predicted labels and calculate the error
     y_true = testSet[:,-1]  # [:-2]
+
 
     #Use the specified loss function from the parameters
     tempErr = loss_function(y_true, y_pred)
@@ -102,7 +98,8 @@ def cross_validate(X, y, method, paramList, loss_function, nfolds, nrepetitions,
     return Training
 
 
-class krr():
+
+class krr2():
     ''' your header here!
     '''
 
@@ -127,7 +124,7 @@ class krr():
 
         # Calculate the Kernel Matrix K
         #Fehlerquelle
-        self.K = self.calcKer(X, kernel, kernelparameter)
+        self.K = self.calcXYker(X, y,kernel, kernelparameter)
 
         # Calculate the Regularization term C
         if regularization == 0:
@@ -173,31 +170,14 @@ class krr():
         return eps
 
 
-    def predict(self, Y):
+    def predict(self,Y):
 
         #Wir brauchen neue calcKer Funktion für Kernel aus X und Y mit X!=Y
-
-        kerMat = self.calcXYker(self.X, Y, self.kernel, self.kernelparameter)
-        return kerMat.T@self.alpha
-
-        """
-
-        predictions = np.zeros(Y.shape[0])
-
-        #iterate over the data points
-        for i, data in enumerate(Y):
-
-            #calculate the sum
-            for j in range(self.alpha.shape[0]):
-
-                tempKer = self.ker(data, self.X[j], self.kernel, self.kernelparameter)[0]
-                predictions[i] += self.alpha[j] * tempKer
-
-        return predictions
-        """
+        KerMat = self.calcXYker(self.X,Y ,self.kernel, self.kernelparameter)
+        return KerMat.T@self.alpha[:,np.newaxis]
 
     def ker(self, x, y, ker, kernelParameter):
-
+        """
         if  isinstance(ker, list):
             kern = ker[0]
             sigma = ker[1]
@@ -205,19 +185,21 @@ class krr():
         else:
             kern = ker
             sigma = kernelParameter  # ker[1]
-            d = kernelParameter  # ker[2]
+            d = kernelParameter  # ker[2]"""
+        #print("x",x,"y",y,"ker",ker,"kernelParameter",kernelParameter)
 
         # Linear Kernel
-        if kern == 'linear':
+        if ker == 'linear':
             return x * y
 
         # Polynomial Kernel
-        if kern == 'polynomial':
+        if ker == 'polynomial':
+            d = kernelParameter
             return ((x * y) + 1) ** d
 
         # Gaussian Kernel
-        if kern == 'gaussian':
-
+        if ker == 'gaussian':
+            sigma = kernelParameter
             exponent = - (np.abs((x - y)) ** 2) / (2 * (sigma ** 2))
             return np.exp(exponent)
 
@@ -225,7 +207,6 @@ class krr():
 
         # Linear Kernel
         if kernel == 'linear':
-
             return X @ X.T
 
         # Polynomial Kernel
@@ -249,27 +230,53 @@ class krr():
         # "Catch" the wrong specifications
         return X @ X.T
 
-    def  calcXYker(self, X, Y, kernel, kernelparameter):
 
+    def calcXYker(self, X,Y, kernel, kernelparameter):
         # Linear Kernel
         if kernel == 'linear':
-            return X @ Y.T
+            K = np.zeros((X.shape[0],Y.shape[0]))
+            for i,x in enumerate(X):
+                for j,y in enumerate(Y):
+                    try:
+                        K[i,j] = self.ker( x, y, kernel , 0)#np.exp(-1*np.linalg.norm(x-y)**2)
+                    except:
+                        K[i,j] = self.ker( x, y, kernel , 0)[0]
+                    #K[i,j] = self.ker(x, y, "linear", 0)
+            return K
 
         # Polynomial Kernel
         if kernel == 'polynomial':
             d = kernelparameter
+            K = np.zeros((X.shape[0],Y.shape[0]))
+            for i,x in enumerate(X):
+                for j,y in enumerate(Y):
+                    one = np.ones((x@y.T).shape)
+                    try:
+                        K[i,j] = self.ker( x, y, kernel , d)#np.exp(-1*np.linalg.norm(x-y)**2)
+                    except:
+                        K[i,j] = self.ker( x, y, kernel , d)[0]
+                    #K[i,j] = self.ker( x, y, kernel , d)#(x@y.T+one)**d
+            return K
+            
+            #K = X @ Y.T
+            #one = np.ones(K.shape)
+            #return (K+ one)**d"""
+            """d = kernelparameter
             one = np.ones(X.shape)
-            return np.linalg.matrix_power((X @ Y.T + one), d)
+            return np.linalg.matrix_power((X @ Y.T + one), d)"""
 
         # Gaussian Kernel
         if kernel == 'gaussian':
-            sigma = kernelparameter
-            G = X @ Y.T
-            g = np.diag(G)
-            one = np.ones((g.shape[0]))
-            distances = np.outer(g, one) + np.outer(one, g) - 2 * G
-            params = (-1 / (sigma ** 2)) * distances
-            return np.exp(params)
+            K = np.zeros((X.shape[0],Y.shape[0]))
+            d = kernelparameter
+            for i,x in enumerate(X):
+                for j,y in enumerate(Y):
+                    try:
+                        K[i,j] = self.ker( x, y, kernel , d)#np.exp(-1*np.linalg.norm(x-y)**2)
+                    except:
+                        K[i,j] = self.ker( x, y, kernel , d)[0]
+                    #K[i,j] = self.ker( x, y, kernel , d)#np.exp(-1*np.linalg.norm(x-y)**2)
+            return K
 
         # "Catch" the wrong specifications
         return X @ X.T
