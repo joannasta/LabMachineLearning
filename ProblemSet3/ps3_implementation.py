@@ -1,4 +1,5 @@
 
+
 """ ps3_implementation.py
 PUT YOUR NAME HERE:
 Joanna Stamer
@@ -28,6 +29,7 @@ def mean_absolute_error(y_true, y_pred):
     return (1 / y_true.shape[0]) * np.sum(np.abs(y_pred - y_true))
 
 def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepetitions=5):
+    zeitanfang = time.time()
     ''' your header here!
     '''
     avErr = 0
@@ -71,6 +73,9 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
         return errList[0]
 
     argmin = np.argmin(errList)
+    zeitende = time.time()
+    print("Dauer Programmausführung:",)
+    print(zeitende-zeitanfang)
     return metList[argmin]
 
 def cross_validate(method, paramList, loss_function, nfolds, nrepetitions, Xtrain, ytrain, Xtest, ytest):
@@ -79,6 +84,11 @@ def cross_validate(method, paramList, loss_function, nfolds, nrepetitions, Xtrai
     ypred = training.predict(Xtest)
     training.cvloss = loss_function(ytest, ypred)
     return training
+  
+
+
+
+
 
 class krr():
     ''' your header here!
