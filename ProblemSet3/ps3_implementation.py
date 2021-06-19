@@ -20,38 +20,6 @@ import pylab as pl
 
 # from mpl_toolkits.mplot3d import
 
-
-def zero_one_loss(y_true, y_pred):
-    ''' your header here!
-    '''
-
-
-def mean_absolute_error(y_true, y_pred):
-    return (1 / y_true.shape[0]) * np.sum(np.abs(y_pred - y_true))
-
-
-
-""" ps3_implementation.py
-PUT YOUR NAME HERE:
-Joanna Stamer
-Friedrich Wicke
-Write the functions
-- cv
-- zero_one_loss
-- krr
-Write your implementations in the given functions stubs!
-(c) Daniel Bartz, TU Berlin, 2013
-"""
-
-import numpy as np
-import scipy.linalg as la
-import itertools as it
-import time
-import pylab as pl
-
-
-# from mpl_toolkits.mplot3d import
-
 def zero_one_loss(y_true, y_pred):
     ''' your header here!
     '''
@@ -78,6 +46,17 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
             ytest = y[i]
             Xtrain = X[I!=I[i]]
             ytrain = y[I!=I[i]]
+            try:
+                Xtest = Xtest.reshape(Xtest.shape[0]*Xtest.shape[1],Xtest.shape[2])
+                Xtrain = Xtrain.reshape(Xtrain.shape[0]*Xtrain.shape[1],Xtrain.shape[2])
+                ytest = ytest.reshape(ytest.shape[0]*ytest.shape[1],)
+                ytrain = ytrain.reshape(ytrain.shape[0]*ytrain.shape[1],)
+            except:
+                Xtest = Xtest.reshape(Xtest.shape[0],Xtest.shape[1])
+                Xtrain = Xtrain.reshape(Xtrain.shape[0],Xtrain.shape[1])
+                ytest = ytest.reshape(ytest.shape[0],)
+                ytrain = ytrain.reshape(ytrain.shape[0],)
+                    
 
             for count, i in enumerate(it.product(*params.values())):
 
@@ -100,13 +79,6 @@ def cross_validate(method, paramList, loss_function, nfolds, nrepetitions, Xtrai
     ypred = training.predict(Xtest)
     training.cvloss = loss_function(ytest, ypred)
     return training
-  
-
-
-
-
-
-
 
 class krr():
     ''' your header here!
@@ -197,7 +169,8 @@ class krr():
             return np.exp(exponent)
         
     def calcKer(self,X,Y=None):
-        
+        #print("kernel",self.kernel)
+        #print("X",X.shape,"kP",self.kernelparameter)
         if Y is None:
             Y = X.T
             D = np.zeros((X.shape[0],Y.shape[1]))
@@ -231,3 +204,7 @@ class krr():
                         D[i,j]= self.ker(X[i,0],Y[j,0])
             
         return D
+  
+
+
+
