@@ -53,7 +53,6 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
         y = y[I]
         #print("X",X.shape,"y",y.shape)
         for i in range(I.shape[0]):
-            print("splitting Array")
             Xtest = X[i]
             ytest = y[i]
             Xtrain = X[I!=I[i]]
@@ -61,7 +60,6 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
                     
 
             for count, j in enumerate(it.product(*params.values())):
-                print("kartesisches produkt")
 
                 if repetition == 0:
                     met = cross_validate(method, [*j], loss_function, nfolds, nrepetitions, Xtrain ,ytrain, Xtest,ytest)
@@ -106,54 +104,34 @@ class krr():
         self.X = 0
 
     def fit(self, X, y):
+        #print("krr fit")
 
         self.X = X
-
         # Calculate the Kernel Matrix K
         #Fehlerquelle
         self.K = self.calcKer(X)
-
         # Calculate the Regularization term C
         if self.regularization == 0:
-
             # Calculate the mean of the Eigenvalues as the center of candidates
             eigVals, eigVecs = np.linalg.eigh(self.K)
-            eigMean = np.mean(eigVals)
-
             # Create a List of candidates
-            paramList = np.logspace(-2, 2, num=30, base=eigMean)
-
+            paramList = np.logspace(-2, 2, 30, base=np.mean(eigVals))
             # iterate over the list, find the lowest error and save the C value
-
             UT = np.linalg.inv(eigVecs)
-            UTY = UT @ y
-            errors = [self.regError(C, eigVecs, UT, eigVals, y, UTY) for C in paramList]
-
+            errors =  []
+            for C in paramList:
+                Linv = np.diag([1 / (C + x) for x in eigVals])
+                S = eigVecs @ np.diag(eigVals) @ Linv @ UT
+                eps = 0
+                for i in range(y.shape[0]):
+                    eps += ((y[i] - (S@y)[i])/(1 - S[i,i]))**2
+                errors.append(eps/y.shape[0])
             # set the reg param of the object
             self.regularization = paramList[np.argmin(errors)]
-
         # set the weight vector of the object
         self.alpha = np.linalg.solve(self.K + self.regularization * np.eye(self.K.shape[0]),y)
         #self.alpha = np.linalg.inv(self.K + self.regularization * np.eye(self.K.shape[0])) @ y
-
         return self
-
-    def regError(self, C, U, UT, L, y, UTY):
-
-        # Calculate the "constants"
-        n = y.shape[0]
-        Linv = np.diag([1 / (C + x) for x in L])
-        ULLinv = U @ np.diag(L) @ Linv
-        S = ULLinv @ UT
-        Sy = ULLinv @ UTY
-
-        # Calculate the error
-        eps = 0
-        for i in range(n):
-            eps += ((y[i] - Sy[i]) / (1 - S[i, i])) ** 2
-        eps = eps / n
-
-        return eps
 
 
     def predict(self,Y):
@@ -164,12 +142,6 @@ class krr():
 
     def ker(self, x, y):
 
-        # Linear Kernel
-
-        # Polynomial Kernel
-        if self.kernel == "polynomial":
-            d = self.kernelparameter
-            return ((x*y) + 1) ** d
 
         # Gaussian Kernel
         if self.kernel == "gaussian":
