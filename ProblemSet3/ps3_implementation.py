@@ -42,40 +42,33 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
     y_old = y
 
     for repetition in range(nrepetitions):
-        Idx = np.arange(0,X.shape[1])
+        print("repetition",repetition)
+        Idx = np.arange(0,y.shape[0])
         np.random.shuffle(Idx)
         I = np.array(np.array_split(Idx, nfolds,axis=0))
         #print("X vor",X.shape,"y vor ",y.shape)
 
-        X = X[:,I].T     #shape = (400,2) ->2,400  nicht für (8,468)
-        y = y[I].T      #shape = 400
+        if X.shape[1] == y.shape[0]: X = X.T
+        X = X[I]
+        y = y[I]
         #print("X",X.shape,"y",y.shape)
         for i in range(I.shape[0]):
+            print("splitting Array")
             Xtest = X[i]
             ytest = y[i]
-            Xtrain = X[I.T!=I.T[i]]
-            ytrain = y[I.T!=I.T[i]]
-            #print("Xtrain",Xtrain.shape)
-            try:
-                Xtest = Xtest.reshape(Xtest.shape[0]*Xtest.shape[1],Xtest.shape[2])
-                Xtrain = Xtrain.reshape(Xtrain.shape[0]*Xtrain.shape[1],Xtrain.shape[2])
-                ytest = ytest.reshape(ytest.shape[0]*ytest.shape[1],)
-                ytrain = ytrain.reshape(ytrain.shape[0]*ytrain.shape[1],)
-            except:
-                Xtest = Xtest.reshape(Xtest.shape[0],Xtest.shape[1])
-                Xtrain = Xtrain.reshape(Xtrain.shape[0],Xtrain.shape[1])
-                ytest = ytest.reshape(ytest.shape[0],)
-                ytrain = ytrain.reshape(ytrain.shape[0],)
+            Xtrain = X[I!=I[i]]
+            ytrain = y[I!=I[i]]
                     
 
-            for count, i in enumerate(it.product(*params.values())):
+            for count, j in enumerate(it.product(*params.values())):
+                print("kartesisches produkt")
 
                 if repetition == 0:
-                    met = cross_validate(method, [*i], loss_function, nfolds, nrepetitions, Xtrain ,ytrain, Xtest,ytest)
+                    met = cross_validate(method, [*j], loss_function, nfolds, nrepetitions, Xtrain ,ytrain, Xtest,ytest)
                     metList.append(met)
                     errList.append(met.cvloss)
                 else:
-                    met = cross_validate( method, [*i], loss_function, nfolds, nrepetitions, Xtrain ,ytrain, Xtest,ytest)
+                    met = cross_validate( method, [*j], loss_function, nfolds, nrepetitions, Xtrain ,ytrain, Xtest,ytest)
                     errList[count] += met.cvloss
         X = X_old
         y = y_old
@@ -174,8 +167,6 @@ class krr():
     def ker(self, x, y):
 
         # Linear Kernel
-        if self.kernel == "linear":
-            return x*y
 
         # Polynomial Kernel
         if self.kernel == "polynomial":
@@ -187,44 +178,17 @@ class krr():
             sigma = self.kernelparameter
             exponent = - (np.abs(x)**2 + np.abs(y)**2-2*(x*y)) / (2 * (sigma ** 2))
             return np.exp(exponent)
-        
+
     def calcKer(self,X,Y=None):
-        #print("kernel",self.kernel)
-        #print("X",X.shape,"kP",self.kernelparameter)
-        if Y is None:
-            Y = X.T
-            D = np.zeros((X.shape[0],Y.shape[1]))
-            if self.kernel == "linear":
-                for i in range(X.shape[0]):
-                    for j in range(Y.shape[1]):
-                        D[i,j]= self.ker(X[i,0],Y[0,j])
-                    
-            if self.kernel == "polynomial":
-                for i in range(X.shape[0]):
-                    for j in range(Y.shape[1]):
-                        D[i,j]= self.ker(X[i,0],Y[0,j])
-            if self.kernel == "gaussian":
-                for i in range(X.shape[0]):
-                    for j in range(Y.shape[1]):
-                        D[i,j]= self.ker(X[i,0],Y[0,j])
-        else:
-            D = np.zeros((X.shape[0],Y.shape[0]))
-            if self.kernel == "linear":
-                for i in range(X.shape[0]):
-                    for j in range(Y.shape[0]):
-                        D[i,j]= self.ker(X[i,0],Y[j,0])
-                    
-            if self.kernel == "polynomial":
-                for i in range(X.shape[0]):
-                    for j in range(Y.shape[0]):
-                        D[i,j]= self.ker(X[i,0],Y[j,0])
-            if self.kernel == "gaussian":
-                for i in range(X.shape[0]):
-                    for j in range(Y.shape[0]):
-                        D[i,j]= self.ker(X[i,0],Y[j,0])
-            
+        if Y is None: Y = X
+        D = np.zeros((X.shape[0],Y.shape[0]))
+        if self.ker == "linear":
+            return X@Y.T
+        if self.ker == "polynomial":
+            return(X@Y.T+1)**self.kernelparameter
+        for i in range(X.shape[0]):
+            for j in range(Y.shape[0]):
+                D[i,j]= self.ker(X[i,0],Y[j,0])
         return D
-  
-
-
-
+        
+    
