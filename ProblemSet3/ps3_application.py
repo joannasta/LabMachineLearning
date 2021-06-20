@@ -102,9 +102,11 @@ def assignment_3():
 
 
 
-def roc_curve(n):
-    ''' your header here!
-    '''
+def roc_curve(fpr,tpr):
+    plt.plot(fpr,tpr)
+    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate')
+    plt.show()
 
 
 def roc_fun(y_true, y_pred):
@@ -138,9 +140,9 @@ def roc_fun(y_true, y_pred):
             TN = TN +1
         TPR = TP/(TP+FN)
         FPR = FP/(FP+TN)
+        roc_curve(FPR,TPR)
         Rates.append((TPR,FPR))
-    print
-
+    return biases[np.argmin(rates)]
 
     
 def krr_app(reg=False):
