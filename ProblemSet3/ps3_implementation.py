@@ -125,11 +125,9 @@ class krr():
 
             # iterate over the list, find the lowest error and save the C value
 
-            U = eigVecs
-            UT = np.linalg.inv(U)
-            L = eigVals
+            UT = np.linalg.inv(eigVecs)
             UTY = UT @ y
-            errors = [self.regError(C, U, UT, L, y, UTY) for C in paramList]
+            errors = [self.regError(C, eigVecs, UT, eigVals, y, UTY) for C in paramList]
 
             # set the reg param of the object
             self.regularization = paramList[np.argmin(errors)]
@@ -182,9 +180,9 @@ class krr():
     def calcKer(self,X,Y=None):
         if Y is None: Y = X
         D = np.zeros((X.shape[0],Y.shape[0]))
-        if self.ker == "linear":
+        if self.kernel == "linear":
             return X@Y.T
-        if self.ker == "polynomial":
+        if self.kernel == "polynomial":
             return(X@Y.T+1)**self.kernelparameter
         for i in range(X.shape[0]):
             for j in range(Y.shape[0]):
