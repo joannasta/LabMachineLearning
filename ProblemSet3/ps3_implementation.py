@@ -22,6 +22,8 @@ import pylab as pl
 # from mpl_toolkits.mplot3d import
 
 def zero_one_loss(y_true, y_pred):
+    n = y_true.shape[0]
+    return (1/n)*np.count_nonzero(y_true!=np.sign(y_pred)) # y_true +1,-1 -> y_pred +1,0,-1
     ''' your header here!
     '''
 
@@ -36,18 +38,24 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
     parDim = [len(params[x]) for x in params]
     errList = []
     metList = []
+    X_old = X
+    y_old = y
 
     for repetition in range(nrepetitions):
-        Idx = np.arange(0,X.shape[0])
+        Idx = np.arange(0,X.shape[1])
         np.random.shuffle(Idx)
-        I = np.array(np.array_split(Idx, nfolds))
-        X = X[I]      #shape = 100,1
-        y = y[I]      #shape = 100
+        I = np.array(np.array_split(Idx, nfolds,axis=0))
+        #print("X vor",X.shape,"y vor ",y.shape)
+
+        X = X[:,I].T     #shape = (400,2) ->2,400  nicht für (8,468)
+        y = y[I].T      #shape = 400
+        #print("X",X.shape,"y",y.shape)
         for i in range(I.shape[0]):
             Xtest = X[i]
             ytest = y[i]
-            Xtrain = X[I!=I[i]]
-            ytrain = y[I!=I[i]]
+            Xtrain = X[I.T!=I.T[i]]
+            ytrain = y[I.T!=I.T[i]]
+            #print("Xtrain",Xtrain.shape)
             try:
                 Xtest = Xtest.reshape(Xtest.shape[0]*Xtest.shape[1],Xtest.shape[2])
                 Xtrain = Xtrain.reshape(Xtrain.shape[0]*Xtrain.shape[1],Xtrain.shape[2])
@@ -69,6 +77,8 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
                 else:
                     met = cross_validate( method, [*i], loss_function, nfolds, nrepetitions, Xtrain ,ytrain, Xtest,ytest)
                     errList[count] += met.cvloss
+        X = X_old
+        y = y_old
     if len(errList) == 1:
         return errList[0]
 
