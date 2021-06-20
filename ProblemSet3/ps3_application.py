@@ -151,7 +151,7 @@ def roc_fun(y_true, y_pred):
 def krr_app(reg=False):
     ''' your header here!
     '''
-
+    
     banana_xtest = np.loadtxt('./data/U04_banana-xtest.dat')
     banana_xtrain = np.loadtxt('./data/U04_banana-xtrain.dat')
     banana_ytest = np.loadtxt('./data/U04_banana-ytest.dat')
@@ -169,7 +169,7 @@ def krr_app(reg=False):
     'regularization' : krr_banana.regularization,
     'y_pred'  : banana_y_pred}
 
-    banana_bias =roc_fun(banana_ytest, banana_y_pred)
+    #banana_bias =roc_fun(banana_ytest, banana_y_pred)
 
 
     diabetis_xtest = np.loadtxt('./data/U04_diabetis-xtest.dat')
@@ -188,17 +188,19 @@ def krr_app(reg=False):
     'regularization' : krr_diabetis.regularization,
     'y_pred'  : diabetis_y_pred}
 
-    diabetis_bias =roc_fun(diabetis_ytest, diabetis_y_pred)
+    #diabetis_bias =roc_fun(diabetis_ytest, diabetis_y_pred)
+    
 
-
+    
     flare_solar_xtest = np.loadtxt('./data/U04_flare-solar-xtest.dat')
     flare_solar_xtrain = np.loadtxt('./data/U04_flare-solar-xtrain.dat')
     flare_solar_ytest = np.loadtxt('./data/U04_flare-solar-ytest.dat')
     flare_solar_ytrain = np.loadtxt('./data/U04_flare-solar-ytrain.dat')
     params_flare_solar = { 'kernel': ['gaussian'], 'kernelparameter': np.logspace(-4,4,20),
                       'regularization': [0]}
+    print("flare_solar_xtrain,flare_solar_ytrain",flare_solar_xtrain.shape,flare_solar_ytrain.shape)
     print("start flare_solar_ cv")
-    krr_flare_solar = imp.cv(flare_solar_xtrain, flare_solar_ytrain, imp.krr, params_flare_solar, loss_function=imp.zero_one_loss, nfolds=10, nrepetitions=5)
+    krr_flare_solar = imp.cv(flare_solar_xtrain, flare_solar_ytrain, imp.krr, params_flare_solar, loss_function=imp.zero_one_loss, nfolds=6, nrepetitions=5)
     print("end flare_solar_ cv")
     flare_solar_y_pred = krr_flare_solar.predict(flare_solar_xtest)
     result_flare_solar={'cvloss':krr_flare_solar.cvloss,
@@ -207,17 +209,18 @@ def krr_app(reg=False):
     'regularization' : krr_flare_solar.regularization,
     'y_pred'  : flare_solar_y_pred}
 
-    flare_solar_bias = roc_fun(flare_solar_ytest, flare_solar_y_pred)
+    #flare_solar_bias = roc_fun(flare_solar_ytest, flare_solar_y_pred)
 
-
+    
     image_xtest = np.loadtxt('./data/U04_image-xtest.dat')
     image_xtrain = np.loadtxt('./data/U04_image-xtrain.dat')
     image_ytest = np.loadtxt('./data/U04_image-ytest.dat')
     image_ytrain = np.loadtxt('./data/U04_image-ytrain.dat')
     params_image = { 'kernel': ['gaussian'], 'kernelparameter': np.logspace(-4,4,20),
                       'regularization': [0]}
+    
     print("start image cv")
-    krr_image = imp.cv(image_xtrain, image_ytrain, imp.krr, params_image, loss_function=imp.zero_one_loss, nfolds=10, nrepetitions=5)
+    krr_image = imp.cv(image_xtrain, image_ytrain, imp.krr, params_image, loss_function=imp.zero_one_loss, nfolds=13, nrepetitions=5)
     print("end image cv")
     image_y_pred = krr_image.predict(image_xtest)
     result_image={'cvloss':krr_image.cvloss,
@@ -226,17 +229,18 @@ def krr_app(reg=False):
     'regularization' : krr_image.regularization,
     'y_pred'  : image_y_pred}             
 
-    image_bias = roc_fun(image_ytest, image_y_pred)     
+    #image_bias = roc_fun(image_ytest, image_y_pred)     
 
-
+    
     ringnorm_xtest = np.loadtxt('./data/U04_ringnorm-xtest.dat')
     ringnorm_xtrain = np.loadtxt('./data/U04_ringnorm-xtrain.dat')
     ringnorm_ytest = np.loadtxt('./data/U04_ringnorm-ytest.dat')
     ringnorm_ytrain = np.loadtxt('./data/U04_ringnorm-ytrain.dat')
     params_ringnorm = { 'kernel': ['gaussian'], 'kernelparameter': np.logspace(-4,4,20),
                       'regularization': [0]}
+    print("ringnorm_xtrain,ringnorm_ytrain",ringnorm_xtrain.shape,ringnorm_ytrain.shape)
     print("start ringnorm cv")
-    krr_ringnorm = imp.cv(ringnorm_xtrain, ringnorm_ytrain, imp.krr, params_ringnorm, loss_function=imp.zero_one_loss, nfolds=20, nrepetitions=5)
+    krr_ringnorm = imp.cv(ringnorm_xtrain, ringnorm_ytrain, imp.krr, params_ringnorm, loss_function=imp.zero_one_loss, nfolds=10, nrepetitions=5)
     print("end ringnorm cv")
     ringnorm_y_pred = krr_ringnorm.predict(ringnorm_xtest)
     result_ringnorm={'cvloss':krr_ringnorm.cvloss,
@@ -245,7 +249,7 @@ def krr_app(reg=False):
     'regularization' : krr_ringnorm.regularization,
     'y_pred'  : ringnorm_y_pred}
 
-    ringnorm_bias = roc_fun(ringnorm_ytest, ringnorm_y_pred)
+    #ringnorm_bias = roc_fun(ringnorm_ytest, ringnorm_y_pred)
 
 
     results ={
