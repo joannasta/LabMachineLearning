@@ -6,10 +6,10 @@ import unittest
 
 import numpy as np
 import torch as tr
-import sheet4 as imp
+import ps4_implementation as imp
 
 class TestSheet4(unittest.TestCase):
-    def test_svm_qp(self):
+    """def test_svm_qp(self):
         C = imp.svm_qp(kernel='linear', C=1.)
         np.random.seed(1)
         X_tr = np.hstack((np.random.normal(size=[2, 30]), np.random.normal(size=[2, 30]) + np.array([2., 2.])[:, np.newaxis])).T
@@ -30,7 +30,7 @@ class TestSheet4(unittest.TestCase):
         X_tr = np.hstack((np.random.normal(size=[2, 30]), np.random.normal(size=[2, 30]) + np.array([2., 2.])[:, np.newaxis])).T
         Y_tr = np.array([1] * 30 + [-1] * 30)
         C.fit(X_tr, Y_tr)
-        imp.plot_boundary_2d(X_tr, Y_tr, C)
+        imp.plot_boundary_2d(X_tr, Y_tr, C)"""
 
 
     def test_neural_network(self):
