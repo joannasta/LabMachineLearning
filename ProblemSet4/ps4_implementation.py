@@ -21,6 +21,7 @@ from cvxopt.solvers import qp
 from cvxopt import matrix as cvxmatrix
 import numpy as np
 import torch
+import torch.nn as nn
 
 class svm_qp():
     """ Support Vector Machines via Quadratic Programming """
@@ -117,11 +118,12 @@ def buildKernel(X, Y=False, kernel='linear', kernelparameter=0):
         raise Exception('unspecified kernel')
     return K
 
-class neural_network(Module):
+class neural_network(nn.Module):
+
     def __init__(self, layers=[2,100,2], scale=.1, p=None, lr=None, lam=None):
         super().__init__()
-        self.weights = ParameterList([Parameter(scale*torch.randn(m, n)) for m, n in zip(layers[:-1], layers[1:])])
-        self.biases = ParameterList([Parameter(scale*torch.randn(n)) for n in layers[1:]])
+        self.weights = nn.ParameterList([nn.Parameter(scale*torch.randn(m, n)) for m, n in zip(layers[:-1], layers[1:])])
+        self.biases = nn.ParameterList([nn.Parameter(scale*torch.randn(n)) for n in layers[1:]])
 
         self.p = p
         self.lr = lr
@@ -129,24 +131,64 @@ class neural_network(Module):
         self.train = False
 
     def relu(self, X, W, b):
-        # YOUR CODE HERE!
-        pass
+
+        #get the dimensions
+        n       = X.shape[0]
+        inDim   = X.shape[1]
+        outDim  = b.shape[0]
+
+        #Case 1: in Training
+        if self.train == True:
+            delta = self.bernouli(torch.rand(outDim))
+            Z = delta*(X@W+b)
+            Z[Z < 0] = 0
+
+        #Case 2: in Testing
+        if self.train == False:
+            Z       = (1-self.p)*(X@W+b)
+            Z[Z<0]  = 0
+
+        #return the Output
+        #Why is Z = NONE???
+        self.X = Z
 
     def softmax(self, X, W, b):
-        # YOUR CODE HERE!
-        pass
+
+        #Calculate Z
+        Z = X @ W + b
+
+        #Calculate the Denominator
+        denom = 0
+        for zt in Z.T:
+            denom += torch.exp(zt)
+
+        #Calculate and return Y
+        Y = torch.exp(Z)/(denom)
+        self.X = Y
 
     def forward(self, X):
-        X = torch.tensor(X, dtype=torch.float)
-        # YOUR CODE HERE!
+
+        X = torch.tensor(X, dtype=torch.float) #reqiures_grad=true?
+
+        #Relu Layers - for loop
+        for iteration in range(weights.shape[0]-1):
+            self.relu(self.X,self.weights[iteration],self.biases[iteration])
+
+        #Softmax Layer
+        X = self.softmax(self.X, self.weights[-1], self.biases[-1])
+
         return X
 
     def predict(self, X):
         return self.forward(X).detach().numpy()
 
     def loss(self, ypred, ytrue):
-        # YOUR CODE HERE!
-        pass
+
+        loss = 0
+        for i in range(ypred.shape[0]):
+                loss += -ytrue[i]*torch.log(ypred[i])
+
+        return loss
 
     def fit(self, X, y, nsteps=1000, bs=100, plot=False):
         X, y = torch.tensor(X), torch.tensor(y)
@@ -178,3 +220,31 @@ class neural_network(Module):
             plt.plot(range(nsteps), Aval, label='Validation acc')
             plt.legend()
             plt.show()
+
+    def bernouli(self, X):
+
+        # Create the array to be returned
+        Y = torch.zeros(X.size)
+
+        # iterate over the array of random numbers
+        for count, x in enumerate(X):
+
+            if x < self.p:
+                Y[count] = 1
+
+        return Y
+
+def testNN():
+
+    nn   = neural_network()
+    nn.p = 0.2
+
+    X = torch.rand(3,3)
+    W = torch.rand(3,3)
+    b = torch.ones(3)
+    ypred = torch.tensor([0.936, 0.028, 0.013, 0.023])
+    ytrue = torch.tensor([1, 0, 0, 0])
+
+    #nn.relu(X,W,b)
+    #nn.softmax(X,W,b)
+    print(nn.loss(ypred,ytrue))
