@@ -23,7 +23,7 @@ class TestSheet4(unittest.TestCase):
         print('test case loss', loss)
         self.assertTrue(loss < 0.25, msg='svm_qp: Error. The loss is %.2f and should be below 0.25' % loss)
 
-        
+
     def test_plot_boundary_2d(self):
         C = imp.svm_sklearn(kernel='gaussian', C=1.)
         np.random.seed(1)
@@ -32,7 +32,7 @@ class TestSheet4(unittest.TestCase):
         C.fit(X_tr, Y_tr)
         imp.plot_boundary_2d(X_tr, Y_tr, C)"""
 
-
+    """
     def test_neural_network(self):
         X = tr.tensor([[1, 1], [0, 0]], dtype=tr.float)
         y = tr.tensor([[0, 1], [1, 0]], dtype=tr.int)
@@ -55,6 +55,7 @@ class TestSheet4(unittest.TestCase):
         loss = m.loss(out, y).item()
         self.assertTrue(np.isclose(loss_out, loss), msg='neural_network: Error. Loss output not correct')
         self.assertTrue(np.allclose(out.detach().numpy(), softmax_out), msg='neural_network: Error. Network output not correct')
+    """
 
     def test_nn_fit(self):
         np.random.seed(1)
