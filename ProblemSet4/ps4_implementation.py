@@ -22,6 +22,7 @@ from cvxopt import matrix as cvxmatrix
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.optim as optim
 
 class svm_qp():
     """ Support Vector Machines via Quadratic Programming """
@@ -138,19 +139,20 @@ class neural_network(nn.Module):
         outDim  = b.shape[0]
 
         #Case 1: in Training
+        Z = X@W+b
+
         if self.train == True:
             delta = self.bernouli(torch.rand(outDim))
-            Z = delta*(X@W+b)
+            Z = delta*Z
             Z[Z < 0] = 0
 
         #Case 2: in Testing
         if self.train == False:
-            Z       = (1-self.p)*(X@W+b)
+            Z       = (1-self.p)*Z
             Z[Z<0]  = 0
 
         #return the Output
-        #Why is Z = NONE???
-        self.X = Z
+        return(Z)
 
     def softmax(self, X, W, b):
 
@@ -159,23 +161,24 @@ class neural_network(nn.Module):
 
         #Calculate the Denominator
         denom = 0
-        for zt in Z.T:
-            denom += torch.exp(zt)
+        for z in Z:
+            denom += torch.exp(z)
 
         #Calculate and return Y
         Y = torch.exp(Z)/(denom)
-        self.X = Y
+
+        return Y
 
     def forward(self, X):
 
         X = torch.tensor(X, dtype=torch.float) #reqiures_grad=true?
 
         #Relu Layers - for loop
-        for iteration in range(weights.shape[0]-1):
-            self.relu(self.X,self.weights[iteration],self.biases[iteration])
+        for weight, bias in zip(self.weights[:-1], self.biases[:-1]):
+            X = self.relu(X, weight, bias)
 
         #Softmax Layer
-        X = self.softmax(self.X, self.weights[-1], self.biases[-1])
+        X = self.softmax(X, self.weights[-1], self.biases[-1])
 
         return X
 
@@ -184,15 +187,25 @@ class neural_network(nn.Module):
 
     def loss(self, ypred, ytrue):
 
-        loss = 0
-        for i in range(ypred.shape[0]):
-                loss += -ytrue[i]*torch.log(ypred[i])
+        #The loss is still too high compared to the suggested solution
+        #Optimizuation works, though and the loss is proportionally right
 
+        #Initialize the loss
+        loss = 0
+
+        #Nested for loop to compute the loss
+        for predLine,trueLine in zip(ypred, ytrue):
+            for p, t in zip(predLine, trueLine):
+                loss += t*torch.log(p)
+
+        loss *= -1/(ypred.shape[0])
+
+        #Return the los
         return loss
 
     def fit(self, X, y, nsteps=1000, bs=100, plot=False):
         X, y = torch.tensor(X), torch.tensor(y)
-        optimizer = SGD(self.parameters(), lr=self.lr, weight_decay=self.lam)
+        optimizer = optim.SGD(self.parameters(), lr=self.lr, weight_decay=self.lam)
 
         I = torch.randperm(X.shape[0])
         n = int(np.ceil(.1 * X.shape[0]))
@@ -224,12 +237,12 @@ class neural_network(nn.Module):
     def bernouli(self, X):
 
         # Create the array to be returned
-        Y = torch.zeros(X.size)
+        Y = torch.zeros(X.size())
 
         # iterate over the array of random numbers
         for count, x in enumerate(X):
 
-            if x < self.p:
+            if x > self.p:
                 Y[count] = 1
 
         return Y
@@ -237,14 +250,16 @@ class neural_network(nn.Module):
 def testNN():
 
     nn   = neural_network()
+    nn.train = False
     nn.p = 0.2
 
-    X = torch.rand(3,3)
-    W = torch.rand(3,3)
-    b = torch.ones(3)
+    X = torch.ones(3,3)    #torch.rand(3,3)
+    X[1] = torch.tensor([1,-5, 1])
+    W = 2 * torch.ones(3,3)    #torch.rand(3,3)
+    b = 4 * torch.ones(3)
     ypred = torch.tensor([0.936, 0.028, 0.013, 0.023])
     ytrue = torch.tensor([1, 0, 0, 0])
 
-    #nn.relu(X,W,b)
-    #nn.softmax(X,W,b)
-    print(nn.loss(ypred,ytrue))
+    print(nn.relu(X,W,b))
+    print(nn.softmax(X,W,b))
+    #print(nn.loss(ypred,ytrue))
