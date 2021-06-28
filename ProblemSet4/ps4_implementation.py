@@ -88,7 +88,11 @@ class svm_sklearn():
 
 
 def plot_boundary_2d(X, y, model):
-    # INSERT CODE
+
+    #Plot
+    plt.scatter(X[:,0],X[:,1], c = y)
+    plt.show()
+
     pass
 
 
