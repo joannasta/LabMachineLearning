@@ -39,17 +39,19 @@ class svm_qp():
     def fit(self, X, Y):
 
         # INSERT_CODE
-        
+        m,n = X.shape
+        K = buildKernel(X.T,X.T, self.kernel, self.kernelparameter)
         # Here you have to set the matrices as in the general QP problem
-        #P = 
-        #q = 
-        #G = 
-        #h = 
-        #A =   # hint: this has to be a row vector
-        #b =   # hint: this has to be a scalar
+        P = (Y@Y.T)*K
+        q = np.ones(m) * -1
+        G = np.eye(m) * -1
+        h = np.zeros(m) 
+        A = Y.T[np.newaxis,:]  # hint: this has to be a row vector
+        b =  0  # hint: this has to be a scalar
         
         # this is already implemented so you don't have to
-        # read throught the cvxopt manual
+            # read throught the cvxopt manual
+
         alpha = np.array(qp(cvxmatrix(P, tc='d'),
                             cvxmatrix(q, tc='d'),
                             cvxmatrix(G, tc='d'),
@@ -57,13 +59,23 @@ class svm_qp():
                             cvxmatrix(A, tc='d'),
                             cvxmatrix(b, tc='d'))['x']).flatten()
 
-        #b = 
+        idx = np.nonzero(alpha)[0] # müssen vielleicht verändern da toleranz eingebaut werden muss
+        X_new = X[idx]
+        Y_new = Y[idx]
+        alpha_new = alpha[idx]
+        b = Y_new - buildKernel(X_new.T,X_new.T, self.kernel, self.kernelparameter)@alpha_new@Y_new
+        self.Y_sv = Y_new
+        self.b = b
+        self.X_sv = X_new
+        self.alpha_sv = alpha_new
+
 
     def predict(self, X):
 
-        # INSERT_CODE
 
-        return self
+        # INSERT_CODE
+        Y_sv =np.sign(np.sum(buildKernel(X.T,X.T, self.kernel, self.kernelparameter)  * self.alpha_sv * self.Y_sv, axis=0) + self.b) #np.sign(self.alpha*X + self.b)
+        return Y_sv
 
 
 # This is already implemented for your convenience
@@ -109,7 +121,7 @@ def sqdistmat(X, Y=False):
 
 def buildKernel(X, Y=False, kernel='linear', kernelparameter=0):
     d, n = X.shape
-    if Y.isinstance(bool) and Y is False:
+    if isinstance(Y, bool) and Y is False:
         Y = X
     if kernel == 'linear':
         K = np.dot(X.T, Y)
