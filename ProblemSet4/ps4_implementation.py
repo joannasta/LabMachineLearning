@@ -1,16 +1,12 @@
-""" ps4_implementation.py
 
+""" ps4_implementation.py
 PUT YOUR NAME HERE:
 <FIRST_NAME><LAST_NAME>
-
-
 Complete the classes and functions
 - svm_qp
 - plot_svm_2d
 - neural_network
 Write your implementations in the given functions stubs!
-
-
 (c) Felix Brockherde, TU Berlin, 2013
     Jacob Kauffmann, TU Berlin, 2019
 """
@@ -23,6 +19,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from itertools import product
 
 class svm_qp():
     """ Support Vector Machines via Quadratic Programming """
@@ -35,7 +32,7 @@ class svm_qp():
         self.b = None
         self.X_sv = None
         self.Y_sv = None
-    
+
     def fit(self, X, Y):
 
         # INSERT_CODE
@@ -45,10 +42,10 @@ class svm_qp():
         P = (Y@Y.T)*K
         q = np.ones(m) * -1
         G = np.eye(m) * -1
-        h = np.zeros(m) 
+        h = np.zeros(m)
         A = Y.T[np.newaxis,:]  # hint: this has to be a row vector
         b =  0  # hint: this has to be a scalar
-        
+
         # this is already implemented so you don't have to
             # read throught the cvxopt manual
 
@@ -75,6 +72,7 @@ class svm_qp():
 
         # INSERT_CODE
         Y_sv =np.sign(np.sum(buildKernel(X.T,X.T, self.kernel, self.kernelparameter)  * self.alpha_sv * self.Y_sv, axis=0) + self.b) #np.sign(self.alpha*X + self.b)
+        #self.Y_sv = Y_sv
         return Y_sv
 
 
@@ -101,8 +99,36 @@ class svm_sklearn():
 
 def plot_boundary_2d(X, y, model):
 
-    #Plot
+    # Plot the data points and the classes
     plt.scatter(X[:,0],X[:,1], c = y)
+
+    #Plot the Contour Line (separating hyperplane)
+
+    stepSizeX = 1000
+    stepSizeY = 1000
+
+    x1 = np.linspace(X[0].min(), X[0].max(), stepSizeX)
+    y1 = np.linspace(X[1].min(), X[1].max(), stepSizeY)
+    #vals = np.meshgrid(x1, y1)
+
+    Z = [(x2,y2) for x2,y2 in product(x1,y1)]
+    Z = model.predict(Z)
+    print(Z.min())
+    print(Z.shape,"----------------")
+    Zapprox = np.array([z if np.abs(z) > 0.5 else 0 for z in Z])
+    Zapprox = Zapprox.reshape(stepSizeX,stepSizeY)
+    ax = plt.gca()
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    ax.contour(x1, y1, Zapprox, colors='k', levels=[0], alpha=0.5,
+               linestyles=['-'])
+
+    #Plot the support vectors
+    #Support1 = np.random.rand(2) * A.max()
+    #Support2 = np.random.rand(2) * B.max()
+    #plt.scatter(Support1, Support2, marker="x", color="black")
+
+    #Show the plots
     plt.show()
 
     pass
@@ -278,4 +304,3 @@ def testNN():
 
     print(nn.relu(X,W,b))
     print(nn.softmax(X,W,b))
-    #print(nn.loss(ypred,ytrue))
