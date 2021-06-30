@@ -107,29 +107,31 @@ def plot_boundary_2d(X, y, model):
     stepSizeX = 1000
     stepSizeY = 1000
 
-    x1 = np.linspace(X[0].min(), X[0].max(), stepSizeX)
-    y1 = np.linspace(X[1].min(), X[1].max(), stepSizeY)
+    x1 = np.linspace(X[:,0].min(), X[:,0].max(), stepSizeX)
+    y1 = np.linspace(X[:,1].min(), X[:,1].max(), stepSizeY)
     #vals = np.meshgrid(x1, y1)
 
-    Z = [(x2,y2) for x2,y2 in product(x1,y1)]
+    Z = np.array([[x2,y2] for x2,y2 in product(x1,y1)])
+    #plt.scatter(Z[:, 0], Z[:, 1])
     Z = model.predict(Z)
     print(Z.min())
     print(Z.shape,"----------------")
-    Zapprox = np.array([z if np.abs(z) > 0.5 else 0 for z in Z])
-    Zapprox = Zapprox.reshape(stepSizeX,stepSizeY)
+    #Zapprox = np.array([z if np.abs(z) > 0.5 else 0 for z in Z])
+    #Zapprox = Zapprox.reshape(stepSizeX,stepSizeY)
+    Z = Z.reshape(stepSizeX, stepSizeY)
     ax = plt.gca()
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
-    ax.contour(x1, y1, Zapprox, colors='k', levels=[0], alpha=0.5,
-               linestyles=['-'])
+    ax.contour(x1, y1, Z, colors='k', levels=[0], alpha=0.5,linestyles=['-'])
 
     #Plot the support vectors
-    #Support1 = np.random.rand(2) * A.max()
-    #Support2 = np.random.rand(2) * B.max()
-    #plt.scatter(Support1, Support2, marker="x", color="black")
-
-    #Show the plots
-    plt.show()
+    try:
+        supX = model.support_vectors_[:, 0]
+        supY = model.support_vectors_[:, 1]
+        plt.scatter(supX, supY, marker="x", color="black")
+        plt.show()
+    except:
+        plt.show()
 
     pass
 
