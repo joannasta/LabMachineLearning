@@ -44,35 +44,49 @@ class svm_qp():
         G = np.eye(m) * -1
         h = np.zeros(m)
         A = Y.T[np.newaxis,:]  # hint: this has to be a row vector
-        b =  0  # hint: this has to be a scalar
+        b =  np.zeros(1)#0  # hint: this has to be a scalar
 
         # this is already implemented so you don't have to
             # read throught the cvxopt manual
 
-        alpha = np.array(qp(cvxmatrix(P, tc='d'),
+        """alpha = np.array(qp(cvxmatrix(P, tc='d'),
                             cvxmatrix(q, tc='d'),
                             cvxmatrix(G, tc='d'),
                             cvxmatrix(h, tc='d'),
                             cvxmatrix(A, tc='d'),
                             cvxmatrix(b, tc='d'))['x']).flatten()
+        
 
         idx = np.nonzero(alpha)[0] # müssen vielleicht verändern da toleranz eingebaut werden muss
         X_new = X[idx]
         Y_new = Y[idx]
-        alpha_new = alpha[idx]
-        b = Y_new - buildKernel(X_new.T,X_new.T, self.kernel, self.kernelparameter)@alpha_new@Y_new
-        self.Y_sv = Y_new
+        alpha_new = alpha[idx]"""
+        solution = qp(cvxmatrix(P, tc='d'),
+                            cvxmatrix(q, tc='d'),
+                            cvxmatrix(G, tc='d'),
+                            cvxmatrix(h, tc='d'),
+                            cvxmatrix(A, tc='d'),
+                            cvxmatrix(b, tc='d'))
+        alphas = np.array(solution['x']).flatten()
+        ind = (alphas > 1e-4).flatten()
+        sv = X[ind]
+        sv_y = Y[ind]
+        alphas = alphas[ind]
+
+        b = sv_y - np.sum(buildKernel(sv.T,sv.T, self.kernel, self.kernelparameter)* alphas * sv_y,axis=0)
+        b = np.sum(b) / b.size
+        self.Y_sv = sv_y#Y_new
         self.b = b
-        self.X_sv = X_new
-        self.alpha_sv = alpha_new
+        self.X_sv = sv#X_new
+        self.alpha_sv = alphas#alpha_new
 
 
     def predict(self, X):
 
 
         # INSERT_CODE
-        Y_sv =np.sign(np.sum(buildKernel(X.T,X.T, self.kernel, self.kernelparameter)  * self.alpha_sv * self.Y_sv, axis=0) + self.b) #np.sign(self.alpha*X + self.b)
-        #self.Y_sv = Y_sv
+        prod = np.matmul(buildKernel(self.X_sv.T, X.T, self.kernel, self.kernelparameter).T, (self.alpha_sv * self.Y_sv)) + self.b
+        Y_sv = np.sign(prod)
         return Y_sv
 
 
@@ -98,40 +112,39 @@ class svm_sklearn():
 
 
 def plot_boundary_2d(X, y, model):
-
-    # Plot the data points and the classes
-    plt.scatter(X[:,0],X[:,1], c = y)
-
-    #Plot the Contour Line (separating hyperplane)
-
-    stepSizeX = 1000
-    stepSizeY = 1000
+    stepSizeX = 50
+    stepSizeY = 50
 
     x1 = np.linspace(X[:,0].min(), X[:,0].max(), stepSizeX)
     y1 = np.linspace(X[:,1].min(), X[:,1].max(), stepSizeY)
-    #vals = np.meshgrid(x1, y1)
 
-    Z = np.array([[x2,y2] for x2,y2 in product(x1,y1)])
-    #plt.scatter(Z[:, 0], Z[:, 1])
-    Z = model.predict(Z)
-    print(Z.min())
-    print(Z.shape,"----------------")
-    #Zapprox = np.array([z if np.abs(z) > 0.5 else 0 for z in Z])
-    #Zapprox = Zapprox.reshape(stepSizeX,stepSizeY)
-    Z = Z.reshape(stepSizeX, stepSizeY)
+
+    xx,yy = np.meshgrid(x1, y1)
+    
+    cm = plt.cm.RdBu
+    Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+    cm = plt.cm.RdBu
+    Z = Z.reshape(xx.shape)
     ax = plt.gca()
-    xlim = ax.get_xlim()
-    ylim = ax.get_ylim()
-    ax.contour(x1, y1, Z, colors='k', levels=[0], alpha=0.5,linestyles=['-'])
 
-    #Plot the support vectors
+    ax.contourf(xx,yy,Z,cmap=cm,alpha =.8)
+    ax.scatter(X[:, 0], X[:, 1], c=y)
+    # Plot the testing points
+    
+    ax.set_xlim(xx.min(),xx.max())
+    ax.set_ylim(yy.min(),yy.max())
+    ax.set_xticks(())
+    ax.set_yticks(())
     try:
-        supX = model.support_vectors_[:, 0]
-        supY = model.support_vectors_[:, 1]
+        supX = model.X_sv[:, 0]
+        supY = model.X_sv[:, 1]
+        alphas = model.alpha_sv
+        print("alphas",alphas.shape,alphas)
         plt.scatter(supX, supY, marker="x", color="black")
         plt.show()
     except:
         plt.show()
+
 
     pass
 
