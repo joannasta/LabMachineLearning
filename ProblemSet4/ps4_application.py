@@ -41,7 +41,7 @@ def cv(X, y, method, params, loss_function=mean_absolute_error, nfolds=10, nrepe
         print("repetition",repetition)
         Idx = np.arange(0,y.shape[0])
         np.random.shuffle(Idx)
-        I = np.concatenate(np.array(np.array_split(Idx, nfolds,axis=0)))
+        I = np.array(np.array_split(Idx, nfolds,axis=0))
         #print("X vor",X.shape,"y vor ",y.shape)
         print("I",I.shape,I)
         print("X",X.shape,X)
@@ -110,7 +110,7 @@ def roc_fun(y_true, y_pred,cv_results,X_train,y_train,X_test):
 
     biasstart = 0
     biasende = 10
-    biasStepSize = 0.10
+    biasStepSize = 0.010
     biases= np.arange(biasstart,biasende,biasStepSize)
     for bias in biases:
     	M.fit(X_train,y_train)
@@ -339,7 +339,7 @@ def assignment_5():
     X = np.hstack((X0.T,X1.T,X2.T)).T #np.array([X0,X1,X2])
     Y = np.hstack((Y0.T,Y1.T,Y2.T)).T
 
-    Sigmas = np.arange(0.1,1.1,0.01)
+    Sigmas = np.arange(0.1,10.1,0.1)
     C = np.arange(-10,10,1)#np.logspace(-7, 0, num=8, base=10)
     params = {'kernel': ['linear'], 'kernelparameter': Sigmas, 'regularization': C}
     
