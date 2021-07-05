@@ -36,10 +36,15 @@ class svm_qp():
     def fit(self, X, Y):
 
         # INSERT_CODE
+        print("fit")
+        print("X",X.shape)
+        print("Y",Y.shape)
         m,n = X.shape
         K = buildKernel(X.T,X.T, self.kernel, self.kernelparameter)
         # Here you have to set the matrices as in the general QP problem
+        print("K",K.shape)
         P = (Y@Y.T)*K
+        print("P",P.shape)
         q = np.ones(m) * -1
         G = np.eye(m) * -1
         h = np.zeros(m)
@@ -49,18 +54,7 @@ class svm_qp():
         # this is already implemented so you don't have to
             # read throught the cvxopt manual
 
-        """alpha = np.array(qp(cvxmatrix(P, tc='d'),
-                            cvxmatrix(q, tc='d'),
-                            cvxmatrix(G, tc='d'),
-                            cvxmatrix(h, tc='d'),
-                            cvxmatrix(A, tc='d'),
-                            cvxmatrix(b, tc='d'))['x']).flatten()
-        
 
-        idx = np.nonzero(alpha)[0] # müssen vielleicht verändern da toleranz eingebaut werden muss
-        X_new = X[idx]
-        Y_new = Y[idx]
-        alpha_new = alpha[idx]"""
         solution = qp(cvxmatrix(P, tc='d'),
                             cvxmatrix(q, tc='d'),
                             cvxmatrix(G, tc='d'),
@@ -68,7 +62,9 @@ class svm_qp():
                             cvxmatrix(A, tc='d'),
                             cvxmatrix(b, tc='d'))
         alphas = np.array(solution['x']).flatten()
-        ind = (alphas > 1e-4).flatten()
+        print("alphas",alphas.shape,alphas)
+        ind = (alphas > 1e-10).flatten()
+        print("ind",ind)
         sv = X[ind]
         sv_y = Y[ind]
         alphas = alphas[ind]
@@ -85,6 +81,9 @@ class svm_qp():
 
 
         # INSERT_CODE
+        print("(self.alpha_sv * self.Y_sv)",(self.alpha_sv * self.Y_sv).shape) # 44,
+        print("(self.alpha_sv * self.Y_sv)) + self.b", self.b.shape) # zahl
+        K = buildKernel(self.X_sv.T, X.T, self.kernel, self.kernelparameter) # X_sv 44,4 X.T 2500,2 -> 2500,44@ 44,->2500
         prod = np.matmul(buildKernel(self.X_sv.T, X.T, self.kernel, self.kernelparameter).T, (self.alpha_sv * self.Y_sv)) + self.b
         Y_sv = np.sign(prod)
         return Y_sv
@@ -111,7 +110,10 @@ class svm_sklearn():
         return self.clf.decision_function(X)
 
 
-def plot_boundary_2d(X, y, model):
+def plot_boundary_2d(X, y, model,title = None):
+    print("plot fun")
+    print("X",X.shape)
+    print("y",y.shape)
     stepSizeX = 50
     stepSizeY = 50
 
@@ -120,11 +122,15 @@ def plot_boundary_2d(X, y, model):
 
 
     xx,yy = np.meshgrid(x1, y1)
+    print("xx",xx.shape)
+    print("yy",yy.shape)
     
     cm = plt.cm.RdBu
-    Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+    print("xtest",(np.c_[xx.ravel(), yy.ravel()]).shape) # 2500,2 -> ?,4 oder ?,4-> ?,2
+    Z = model.predict(np.c_[xx.ravel(),xx.ravel(), yy.ravel(),yy.ravel()]) # hier kritisch!
+    print("Z",Z.shape)
     cm = plt.cm.RdBu
-    Z = Z.reshape(xx.shape)
+    Z = Z.reshape(xx.shape) # muss shape von 2500 haben -> 50,50
     ax = plt.gca()
 
     ax.contourf(xx,yy,Z,cmap=cm,alpha =.8)
@@ -141,10 +147,13 @@ def plot_boundary_2d(X, y, model):
         alphas = model.alpha_sv
         print("alphas",alphas.shape,alphas)
         plt.scatter(supX, supY, marker="x", color="black")
-        plt.show()
     except:
-        plt.show()
-
+        pass
+        
+    if title != None:
+        plt.title(title+"parameters : kernelparameter = "+str(model.kernelparameter)+", C = "+str(model.C))
+        #plt.legend([model.kernelparameter, model.C], ['kernelparameter', 'C'])
+    plt.show()
 
     pass
 
@@ -154,13 +163,17 @@ def sqdistmat(X, Y=False):
         X2 = sum(X**2, 0)[np.newaxis, :]
         D2 = X2 + X2.T - 2*np.dot(X.T, X)
     else:
+        print("sqdistmat")
+        print("X",X.shape)
+        print("Y",Y.shape)
         X2 = sum(X**2, 0)[:, np.newaxis]
-        Y2 = sum(Y**2, 0)[np.newaxis, :]
+        Y2 = sum(Y**2, 0)[np.newaxis,:]
         D2 = X2 + Y2 - 2*np.dot(X.T, Y)
     return D2
 
 
 def buildKernel(X, Y=False, kernel='linear', kernelparameter=0):
+    print("X",X.shape,"Y",Y.shape,kernel,kernelparameter)
     d, n = X.shape
     if isinstance(Y, bool) and Y is False:
         Y = X
@@ -262,7 +275,7 @@ class neural_network(nn.Module):
 
     def fit(self, X, y, nsteps=1000, bs=100, plot=False):
         X, y = torch.tensor(X), torch.tensor(y)
-        optimizer = optim.SGD(self.parameters(), lr=self.lr, weight_decay=self.lam)
+        optimizer = optim.SGD(self.parameters(), lr=self.lr,weight_decay=self.lam)
 
         I = torch.randperm(X.shape[0])
         n = int(np.ceil(.1 * X.shape[0]))
