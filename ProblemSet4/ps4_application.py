@@ -109,8 +109,8 @@ def roc_fun(y_true, y_pred,cv_results,X_train,y_train,X_test):
 	#M = imp.svm_qp(kernel = gaussian,cv_results.kernelparameter,cv_results.C.)
 
     biasstart = 0
-    biasende = 10
-    biasStepSize = 0.010
+    biasende = 100
+    biasStepSize = 0.0010
     biases= np.arange(biasstart,biasende,biasStepSize)
     for bias in biases:
     	M.fit(X_train,y_train)
@@ -284,8 +284,8 @@ def assignment_4():
 	y_test = data['Y_te'].T #100
 	y_train = data['Y_tr'].T # 100
 	
-	Sigmas = np.arange(0.1,1.1,0.1)
-	C = np.arange(-10,10.1)#np.logspace(-7, 0, num=8, base=10)
+	Sigmas = np.arange(0.1,2.1,0.1)
+	C = np.arange(-10,10,1)#np.logspace(-7, 0, num=8, base=10)
 	params = {'kernel': ['gaussian'], 'kernelparameter': Sigmas, 'regularization': C}
 	
 	M = imp.svm_qp # sigmal 0.5 c =5 gar nicht so schlecht
@@ -322,33 +322,74 @@ def assignment_5():
     data = np.load('./data/iris.npz')
     X = data['X'].T # 135,4 -> 3 Klassen 
     Y = data['Y'].T #(135,) -> kmeans 4 klassen ?
-    #plt.scatter(X[:,0],X[:,1],X[:,2],X[:,3])
-    #plt.show()
+    print("Y",Y);
 
-    mu,r ,loss = kmeans(X,3,100)
-    print("mu,r,loss",mu,mu,r,r.shape,loss)
+    """fig = plt.figure()
+    ax = fig.add_subplot(projection ='3d')
+    img = ax.scatter(X[:,0], X[:,1], X[:,2], c=X[:,3], cmap=plt.hot())
+    fig.colorbar(img)
+    plt.title('Scatter plot of the clusters', fontsize=20)
+    plt.show()"""
+
+    #mu,r ,loss = kmeans(X,3,100)
+    #print("mu,r,loss",mu,mu,r,r.shape,loss)
     
-    X0 = X[r==0]
-    Y0 = Y[r==0]
-    X1 = X[r==1]
-    Y1 = Y[r==1]
-    X2 = X[r==2]
-    Y2 = Y[r==2]
+    X0 = X[Y==1]
+    Y0 = Y[Y==1]
+    X1 = X[Y==2]
+    Y1 = Y[Y==2]
+    X2 = X[Y==3]
+    Y2 = Y[Y==3]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(projection ='3d')
+    img = ax.scatter(X0[:,0], X0[:,1], X0[:,2])
+    #fig.colorbar(img)
+    img = ax.scatter(X1[:,0], X1[:,1], X1[:,2])
+    #fig.colorbar(img)
+    img = ax.scatter(X2[:,0], X2[:,1], X2[:,2])
+    #fig.colorbar(img)
+    ax.legend(("klasse 1","klasse 2","klasse 3"))
+    plt.title('Scatter plot of the clusters', fontsize=20)
+    plt.show()
 
     print("X0,X1,X2",X0.shape,X1.shape,X2.shape)
-    X = np.hstack((X0.T,X1.T,X2.T)).T #np.array([X0,X1,X2])
-    Y = np.hstack((Y0.T,Y1.T,Y2.T)).T
+    print("Y0,Y1,Y2",Y0.shape,Y1.shape,Y2.shape)
+    #X = np.hstack((X0.T,X1.T,X2.T)).T #np.array([X0,X1,X2])
+    #Y = np.hstack((Y0.T,Y1.T,Y2.T)).T
 
+
+    X = np.vstack((X1,X2))
+    Y = np.hstack((Y1,Y2))
+    print("X new",X.shape)
+    print("Y new",Y.shape)
+
+    
+    #plt.scatter(X_new[:,0],X_new[:,1],c= X[:,3])
+    #plt.show()
+    
     Sigmas = np.arange(0.1,10.1,0.1)
-    C = np.arange(-10,10,1)#np.logspace(-7, 0, num=8, base=10)
-    params = {'kernel': ['linear'], 'kernelparameter': Sigmas, 'regularization': C}
+    C = np.arange(0,100,1)#np.logspace(-7, 0, num=8, base=10)
+    #params = {'kernel': ['gaussian'], 'kernelparameter': Sigmas, 'regularization': C}
+
+    sigma_opt = np.inf
+    C_opt = np.inf
+    loss_opt = np.inf
     
     #M = imp.svm_qp # sigmal 0.5 c =5 gar nicht so schlecht
     #cv_results = cv(X, Y, M, params, loss_function=mean_absolute_error, nfolds=10, nrepetitions=2)
     for sigma,C in zip(Sigmas,C):
-        M = imp.svm_qp(kernel='linear',kernelparameter = sigma, C = C)
-        #M = imp.svm_qp(kernel = gaussian,cv_results.kernelparameter,cv_results.C.)
+        print("sigma",sigma,"C",C)
+        M = imp.svm_qp(kernel='polynomial',kernelparameter = sigma, C = C)
+        #M = imp.svm_qp(kernel = linear,sigma,C)
         M.fit(X,Y)
-        #Y_pred = M.predict(X_test)
-        #loss = float(np.sum(np.sign(y_test) != np.sign(Y_pred)))/float(len(y_test))
-        imp.plot_boundary_2d(X, Y, M,"overfitting")
+        Y_pred = M.predict(X)
+        loss = float(np.sum(np.sign(Y) != np.sign(Y_pred)))/float(len(Y))
+        print("loss",loss)
+        if loss != 1.0:
+            sigma_opt = sigma
+            C_opt = C
+            loss_opt = loss
+    print("sigma C loss optimal",sigma_opt,C_opt,loss_opt)
+
+
