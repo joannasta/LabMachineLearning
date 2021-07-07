@@ -36,15 +36,15 @@ class svm_qp():
     def fit(self, X, Y):
 
         # INSERT_CODE
-        print("fit")
-        print("X",X.shape)
-        print("Y",Y.shape)
+        #print("fit")
+        #print("X",X.shape)
+        #print("Y",Y.shape)
         m,n = X.shape
         K = buildKernel(X.T,X.T, self.kernel, self.kernelparameter)
         # Here you have to set the matrices as in the general QP problem
-        print("K",K.shape)
+        #print("K",K.shape)
         P = (Y@Y.T)*K
-        print("P",P.shape)
+        #print("P",P.shape)
         q = np.ones(m) * -1
         G = np.eye(m) * -1
         h = np.zeros(m)
@@ -63,8 +63,8 @@ class svm_qp():
                             cvxmatrix(b, tc='d'))
         alphas = np.array(solution['x']).flatten()
         print("alphas",alphas.shape,alphas)
-        ind = (alphas > 1e-10).flatten()
-        print("ind",ind)
+        ind = (alphas > 1e-9).flatten()
+        #print("ind",ind)
         sv = X[ind]
         sv_y = Y[ind]
         alphas = alphas[ind]
@@ -81,8 +81,8 @@ class svm_qp():
 
 
         # INSERT_CODE
-        print("(self.alpha_sv * self.Y_sv)",(self.alpha_sv * self.Y_sv).shape) # 44,
-        print("(self.alpha_sv * self.Y_sv)) + self.b", self.b.shape) # zahl
+        #print("(self.alpha_sv * self.Y_sv)",(self.alpha_sv * self.Y_sv).shape) # 44,
+        #print("(self.alpha_sv * self.Y_sv)) + self.b", self.b.shape) # zahl
         K = buildKernel(self.X_sv.T, X.T, self.kernel, self.kernelparameter) # X_sv 44,4 X.T 2500,2 -> 2500,44@ 44,->2500
         prod = np.matmul(buildKernel(self.X_sv.T, X.T, self.kernel, self.kernelparameter).T, (self.alpha_sv * self.Y_sv)) + self.b
         Y_sv = np.sign(prod)
@@ -111,9 +111,9 @@ class svm_sklearn():
 
 
 def plot_boundary_2d(X, y, model,title = None):
-    print("plot fun")
-    print("X",X.shape)
-    print("y",y.shape)
+    #print("plot fun")
+    #print("X",X.shape)
+    #print("y",y.shape)
     stepSizeX = 50
     stepSizeY = 50
 
@@ -122,13 +122,13 @@ def plot_boundary_2d(X, y, model,title = None):
 
 
     xx,yy = np.meshgrid(x1, y1)
-    print("xx",xx.shape)
-    print("yy",yy.shape)
+    #print("xx",xx.shape)
+    #print("yy",yy.shape)
     
     cm = plt.cm.RdBu
-    print("xtest",(np.c_[xx.ravel(), yy.ravel()]).shape) # 2500,2 -> ?,4 oder ?,4-> ?,2
-    Z = model.predict(np.c_[xx.ravel(),xx.ravel(), yy.ravel(),yy.ravel()]) # hier kritisch!
-    print("Z",Z.shape)
+    #print("xtest",(np.c_[xx.ravel(), yy.ravel()]).shape) # 2500,2 -> ?,4 oder ?,4-> ?,2
+    Z = model.predict(np.c_[xx.ravel(),yy.ravel()]) # hier kritisch!
+    #print("Z",Z.shape)
     cm = plt.cm.RdBu
     Z = Z.reshape(xx.shape) # muss shape von 2500 haben -> 50,50
     ax = plt.gca()
@@ -145,7 +145,7 @@ def plot_boundary_2d(X, y, model,title = None):
         supX = model.X_sv[:, 0]
         supY = model.X_sv[:, 1]
         alphas = model.alpha_sv
-        print("alphas",alphas.shape,alphas)
+        #print("alphas",alphas.shape,alphas)
         plt.scatter(supX, supY, marker="x", color="black")
     except:
         pass
@@ -163,19 +163,15 @@ def sqdistmat(X, Y=False):
         X2 = sum(X**2, 0)[np.newaxis, :]
         D2 = X2 + X2.T - 2*np.dot(X.T, X)
     else:
-        print("sqdistmat")
-        print("X",X.shape)
-        print("Y",Y.shape)
         X2 = sum(X**2, 0)[:, np.newaxis]
-        Y2 = sum(Y**2, 0)[np.newaxis,:]
+        Y2 = sum(Y**2, 0)[np.newaxis, :]
         D2 = X2 + Y2 - 2*np.dot(X.T, Y)
     return D2
 
 
 def buildKernel(X, Y=False, kernel='linear', kernelparameter=0):
-    print("X",X.shape,"Y",Y.shape,kernel,kernelparameter)
     d, n = X.shape
-    if isinstance(Y, bool) and Y is False:
+    if isinstance(Y,bool) and Y is False:
         Y = X
     if kernel == 'linear':
         K = np.dot(X.T, Y)
