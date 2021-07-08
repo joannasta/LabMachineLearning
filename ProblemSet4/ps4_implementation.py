@@ -43,27 +43,51 @@ class svm_qp():
         K = buildKernel(X.T,X.T, self.kernel, self.kernelparameter)
         # Here you have to set the matrices as in the general QP problem
         #print("K",K.shape)
-        P = (Y@Y.T)*K
+        #P = (Y@Y.T)*K
         #print("P",P.shape)
-        q = np.ones(m) * -1
-        G = np.eye(m) * -1
-        h = np.zeros(m)
-        A = Y.T[np.newaxis,:]  # hint: this has to be a row vector
-        b =  np.zeros(1)#0  # hint: this has to be a scalar
+        #q = np.ones(m) * -1
+        G = np.vstack((np.eye(m) * -1,np.eye(m)))
+        h = np.hstack((np.zeros(m),np.ones(m) *self.C))
+        #A = Y.T[np.newaxis,:]  # hint: this has to be a row vector
+        #b =  np.zeros(1)#0  # hint: this has to be a scalar
+        P = np.matmul(Y,Y.T) * K
+        q = np.ones((m, 1)) * -1
+        A = Y.reshape(1, -1)
+        b = np.zeros(1)
+        #print("K",K.shape,K)
+        #print("P",P.shape,P)
+        #print("q",q.shape,q)
+        #print("G",G.shape,G)
+        #print("A",A.shape,A)
+        #print("b",b.shape,b)
+        #print("h",h.shape,h)
 
         # this is already implemented so you don't have to
             # read throught the cvxopt manual
 
 
-        solution = qp(cvxmatrix(P, tc='d'),
+
+        solution =          qp(cvxmatrix(P, tc='d'),
                             cvxmatrix(q, tc='d'),
                             cvxmatrix(G, tc='d'),
                             cvxmatrix(h, tc='d'),
                             cvxmatrix(A, tc='d'),
                             cvxmatrix(b, tc='d'))
+        # n Daten -> h (2n) , G (2n,n)
+        # alle Alphas Null nicht seprabier
         alphas = np.array(solution['x']).flatten()
+        #lt.plot(alphas)
+        #plt.show()
         print("alphas",alphas.shape,alphas)
-        ind = (alphas > 1e-9).flatten()
+        # alpha[i] zwischen 0 und C
+        # -alpha[i] > 0
+        # alpha[i] <= C
+        idx0=[]
+        for i in range(alphas.shape[0]):
+            if alphas[i] <=self.C and alphas[i] >0:
+                idx0.append(i);
+        print("idx0",idx0)
+        ind = (alphas > 1e-11).flatten()
         #print("ind",ind)
         sv = X[ind]
         sv_y = Y[ind]
@@ -81,11 +105,12 @@ class svm_qp():
 
 
         # INSERT_CODE
-        #print("(self.alpha_sv * self.Y_sv)",(self.alpha_sv * self.Y_sv).shape) # 44,
-        #print("(self.alpha_sv * self.Y_sv)) + self.b", self.b.shape) # zahl
+        #print("(self.alpha_sv * self.Y_sv)",(self.alpha_sv * self.Y_sv)) # 44,
+        #print("(self.alpha_sv * self.Y_sv)) + self.b", self.b) # zahl
         K = buildKernel(self.X_sv.T, X.T, self.kernel, self.kernelparameter) # X_sv 44,4 X.T 2500,2 -> 2500,44@ 44,->2500
+        print("K",K)
         prod = np.matmul(buildKernel(self.X_sv.T, X.T, self.kernel, self.kernelparameter).T, (self.alpha_sv * self.Y_sv)) + self.b
-        Y_sv = np.sign(prod)
+        Y_sv = np.sign(prod)#.astype(int)
         return Y_sv
 
 
@@ -282,6 +307,7 @@ class neural_network(nn.Module):
         for i in range(nsteps):
             optimizer.zero_grad()
             I = torch.randperm(Xtrain.shape[0])[:bs]
+            n = int(np.floor(.9 * X.shape[0]))
             self.train = True
             output = self.loss(self.forward(Xtrain[I]), ytrain[I])
             self.train = False
